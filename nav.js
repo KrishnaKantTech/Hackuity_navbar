@@ -184,7 +184,10 @@
       var on = li.getAttribute('data-nav-panel') === key;
       li.classList.toggle(CLS.active, on);
       var ctrl = el(hook('link'), li);
-      if (ctrl && ctrl.tagName === 'BUTTON') ctrl.setAttribute('aria-expanded', String(on));
+      /* no tag check — Webflow cannot emit <button>, so a head may be an <a>.
+         `items` is already filtered to [data-nav-panel], so every ctrl here
+         is a panel toggle whatever element it happens to be. */
+      if (ctrl) ctrl.setAttribute('aria-expanded', String(on));
     });
 
     body.classList.toggle(CLS.drilled, mode() === 'mobile' && !!key);
@@ -272,7 +275,8 @@
 
   /* ---------- wiring ---------- */
   if (menuBtn) {
-    menuBtn.addEventListener('click', function () {
+    menuBtn.addEventListener('click', function (e) {
+      e.preventDefault();                /* the toggle is an <a href="#"> in Webflow */
       if (mode() === 'mobile' && drawerOpen && activePanel) { setPanel(null); return; }  /* back */
       drawerOpen ? closeDrawer() : openDrawer();
     });
@@ -288,7 +292,7 @@
       hoverTimer = setTimeout(function () { setPanel(key); }, HOVER_IN);
     });
 
-    if (ctrl && ctrl.tagName === 'BUTTON') {
+    if (ctrl) {
       ctrl.addEventListener('click', function (e) {
         e.preventDefault();
         clearTimeout(hoverTimer);
@@ -319,8 +323,15 @@
   });
 
   body.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href]');
-    if (a && drawerOpen) closeDrawer();
+    if (!e.target.closest) return;
+    var a = e.target.closest('a[href]');
+    if (!a || !drawerOpen) return;
+    /* A panel head is a link too once Webflow renders it as <a href="#">.
+       Tapping one drills into its panel — it must not also close the drawer.
+       The compound selector matches only an <li> that owns a panel, so
+       Pricing (an item with no panel) and every in-panel link still close. */
+    if (a.closest(hook('item') + '[data-nav-panel]')) return;
+    closeDrawer();
   });
 
   document.addEventListener('click', function (e) {

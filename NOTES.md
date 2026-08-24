@@ -381,3 +381,115 @@ Reverse direction (tablet -> desktop) also confirmed: panels 508, promo painted.
 Section 7.3's whole table was re-run after the fix and is unchanged — 375 list
 scrolls 124px with Company inside, 375 panel scrolls 1002px, 402 drawer bottom
 794, 768 rail drift 0, 1440 panel top 98, 1920 panel top 94 / height 508.
+
+
+---
+
+# 9. The Webflow import — native clipboard JSON, not an HTML converter
+
+## 9.1 Why the converter route failed
+
+Flowboard (HTML -> Webflow, Chrome extension) was tried first.
+
+- **Nav Mode "Native"** mapped the markup onto Webflow's own Navbar widget:
+  `header.nv-wrap` became `w-nav`, `ul.nv-menu` became `w-nav-menu`, the seven
+  `li` plus Login and the CTA collapsed into ten flat `w-nav-link`s. Every
+  `data-nav-*` attribute was dropped. Total loss.
+- **Nav Mode "Custom"** kept the tree correctly — `nv-wrap > nv-shell > nv-bar /
+  nv-body > nv-menu > nv-item > nv-link` all survived, and so did the custom
+  attributes. But it kept **only one class per element** and dropped every `id`.
+  That loses all 15 combo classes: `nv-btn` off the buttons, `--standalone` /
+  `--inbar` off the two logos, `--menu` / `--close` / `--back` off the three
+  hamburger icons, `--thirds`, `--loose`, `--tight`, `--muted`, `--plain`.
+
+Also relevant: the free plan caps a conversion at 8,000 characters, and the
+markup is 16.4K.
+
+## 9.2 What replaced it
+
+Webflow's own copy/paste payload — `{"type":"@webflow/XscpData", ...}` — pasted
+straight into the Designer. No extension, no size cap, exact fidelity.
+
+`tools/nav-to-webflow.py` generates `webflow/navbar.webflow.json` from
+`nav.html`. Regenerate after any markup change:
+
+```
+python3 tools/nav-to-webflow.py webflow/navbar.webflow.json
+```
+
+Schema, confirmed by copying sample elements out of the live Designer:
+
+| Piece | Shape |
+|---|---|
+| base class | `{"comb":"", "children":[comboId, ...]}` |
+| combo class | `{"comb":"&", "children":[]}` |
+| id | `data.attr.id` |
+| custom attribute | `data.xattr:[{"name":..,"value":..}]` |
+| text | `data.text:true` + child node `{"text":true,"v":"..."}` |
+| link | `type:"Link"`, `data.link:{"mode":"external","url":..}` |
+| list / item | `type:"List"` tag `ul` · `type:"ListItem"` tag `li` |
+| heading / para | `type:"Heading"` tag `h2` · `type:"Paragraph"` |
+| tag override | `type:"Block"` with `tag:"header"` (or section) |
+| inline SVG | `type:"HtmlEmbed"`, markup in `data.content` |
+
+Generated: 194 nodes, 58 styles (43 base + 15 combo), 106 custom attributes,
+9 ids, 18 SVG embeds, 4 roots. Validated by rebuilding HTML from the JSON and
+diffing against `nav.html` — 135 class-carrying elements, class sets identical,
+every `data-nav-*`, `aria-*` and `id` accounted for.
+
+## 9.3 Two changes Webflow forced
+
+**1. Webflow has no `<button>` element.** The six panel heads and the hamburger
+become `<a href="#">`. `nav.js` used to gate its click wiring on
+`tagName === 'BUTTON'`, which would have left the whole nav dead. It no longer
+looks at tag names at all — `items` is already filtered to `[data-nav-panel]`,
+so anything found there is a panel toggle whatever element it is. The toggle now
+calls `preventDefault()` so the `#` never reaches the URL.
+
+Consequence: the close-on-link-click rule had to learn the difference between a
+head and a real link, or tapping "AI-Platform" on mobile would drill in *and*
+close the drawer in the same gesture:
+
+```js
+if (a.closest(hook('item') + '[data-nav-panel]')) return;   // a head - never close
+```
+
+The compound selector matches only an `<li>` that owns a panel, so Pricing (an
+item with no panel) and every in-panel card link still close the drawer.
+
+**2. Webflow wraps every Embed in `<div class="w-embed">`.** The 18 icons are
+Embeds after the port, so that wrapper sits between `.nv-ico` and its `<svg>`.
+Left in flow the SVG measures `height:100%` of an auto-height div and collapses
+to nothing. `nav.css` now drops it out of the layout:
+
+```css
+.nv-wrap .w-embed,.nv-logo--standalone .w-embed{display:contents}
+```
+
+Harmless outside Webflow — there is no `.w-embed` there.
+
+Spans become divs across the board (Webflow's Span is inline-text only and
+cannot nest). Every selector in `nav.css` is class-based, so this is invisible.
+The one tag-qualified rule, `a.nv-card:hover`, still behaves: the disabled
+Partners card is a div, and it should not have a hover state.
+
+## 9.4 Verified
+
+The JSON was rendered back to HTML in Webflow's exact output shape — `<a>`
+instead of `<button>`, `.w-embed` around every icon, plus a stand-in for
+Webflow's base CSS (`ul{padding-left:40px}`, `a{text-decoration:underline}`,
+`h2{font-size:32px}`, the `.w-embed` clearfix) — and run through the full suite
+beside the original markup:
+
+| | original `<button>` | Webflow `<a>` + `.w-embed` |
+|---|---|---|
+| desktop bar / panel top / panel height | 74 / 94 / 508 | 74 / 94 / 508 |
+| tablet body / rail width / rail drift | 704 / 193 / 0 | 704 / 193 / 0 |
+| mobile drawer / scrolled / Company inside | 448 / 124 / yes | 448 / 124 / yes |
+| mobile drill: drawer stays open, toggle | 448 / back | 448 / back |
+| Pricing still closes the drawer | 0 | 0 |
+
+**Identical on every measure.** Also checked: `location.hash` stays empty at all
+three breakpoints (no `#` jump), the logo SVG measures 34px tall inside its
+`.w-embed` (so `display:contents` does its job), and only one hamburger icon is
+visible at a time (so the combo classes survive the round trip).

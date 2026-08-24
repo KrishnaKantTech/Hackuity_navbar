@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hackuity Navbar — all three breakpoints</title>
+<link rel="icon" href="favicon.svg">
+<style>
+  :root{
+    --ground:#faf8ff; --surface:#fff; --ink:#1d0443; --body:#5c5768;
+    --line:#e9e4f5; --accent:#8a68e9;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  body{
+    margin:0;padding:40px 32px 64px;
+    background:var(--ground);color:var(--body);
+    font-family:"Aeonik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  h1{margin:0 0 6px;font-size:28px;letter-spacing:-.02em;color:var(--ink);font-weight:700}
+  .lede{margin:0 0 4px;font-size:16px;line-height:1.6;max-width:70ch}
+  .variant{
+    display:inline-block;margin-bottom:18px;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;
+    color:#fff;background:var(--accent);padding:5px 12px;border-radius:999px;
+  }
+  .grid{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;margin-top:28px}
+  .device{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px}
+  .device h2{
+    margin:0 0 2px;font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em;
+  }
+  .device p{margin:0 0 12px;font-size:13px;color:var(--body);opacity:.85}
+  .device p b{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:500}
+  .frame{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .frame iframe{border:0;display:block;transform-origin:top left}
+  .open{
+    display:inline-block;margin-top:12px;font-size:13px;font-weight:500;
+    color:var(--accent);
+  }
+  .open:hover{text-decoration:underline}
+  .hint{
+    margin-top:32px;padding:16px 20px;border:1px solid var(--line);
+    border-radius:14px;background:var(--surface);font-size:14px;line-height:1.6;max-width:80ch;
+  }
+  .hint code{background:#f0ebff;color:var(--ink);padding:.1em .4em;border-radius:5px;font-size:.9em}
+</style>
+</head>
+<body>
+
+<span class="variant">fixed-height bar</span>
+<h1>All three breakpoints at once</h1>
+<p class="lede">
+  Each frame below is a real browser window at that width running <code>embed.html</code> —
+  so the mobile layout is live, not a picture. No need to resize anything.
+</p>
+
+<div class="grid">
+  <div class="device">
+    <h2>Mobile</h2>
+    <p><b>402 × 874</b> — bar at the bottom, logo on top</p>
+    <div class="frame" style="width:402px;height:874px">
+      <iframe src="embed.html" width="402" height="874" title="Mobile preview"></iframe>
+    </div>
+    <a class="open" href="embed.html" target="_blank" rel="noopener">Open full size →</a>
+  </div>
+
+  <div class="device">
+    <h2>Tablet</h2>
+    <p><b>1024 × 1100</b> shown at 68% — rail on the right</p>
+    <div class="frame" style="width:697px;height:748px">
+      <iframe src="embed.html" width="1024" height="1100" title="Tablet preview"
+              style="transform:scale(.68)"></iframe>
+    </div>
+    <a class="open" href="embed.html" target="_blank" rel="noopener">Open full size →</a>
+  </div>
+
+  <div class="device">
+    <h2>Desktop</h2>
+    <p><b>1920 × 1000</b> shown at 50% — full 7-link bar</p>
+    <div class="frame" style="width:960px;height:500px">
+      <iframe src="embed.html" width="1920" height="1000" title="Desktop preview"
+              style="transform:scale(.5)"></iframe>
+    </div>
+    <a class="open" href="embed.html" target="_blank" rel="noopener">Open full size →</a>
+  </div>
+</div>
+
+<p class="hint">
+  <b>Interact inside any frame</b> — hover a nav item on desktop, tap <b>Menu</b> on tablet or
+  mobile. The tablet and desktop frames are scaled with a CSS transform, so clicks land where you
+  expect but text looks smaller than life size. Use <b>Open full size</b> for the real thing.
+</p>
+
+<p class="hint">
+  <b>Frames blank?</b> Safari blocks one local file from framing another. Open this page in
+  <b>Chrome</b>, or just open <code>embed.html</code> directly and resize the window — the
+  breakpoints are 1620, 768 and 480.
+</p>
+
+</body>
+</html>

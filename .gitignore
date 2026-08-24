@@ -1,0 +1,30 @@
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+
+# ── Editors ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Node / tooling (only if a build step is ever added) ───────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+package-lock.json.bak
+
+# ── Local scratch ─────────────────────────────────────────────────────
+shots/
+tmp/
+*.local.*
+.env
+.env.*

@@ -303,3 +303,81 @@ jsDelivr they resolve next to the stylesheet. Delete that block if Webflow hosts
 
 Still open from § 6: the four pass-2 panels, the ~30 icon SVGs, the logo SVG, and converting
 `Aeonik-Bold.otf` (~161KB) to woff2 — this machine has no `fonttools`/`brotli` bindings either.
+
+
+---
+
+# 8. Blank mega-menu column after crossing the breakpoint
+
+**Reported:** "sometimes AI-Platform does not appear and shows a blank white div."
+**Pre-existing** — reproduced on the original `navbar.js` as well, so this is not
+fallout from the pass-3 refactor.
+
+## 8.1 Cause
+
+`applyHeight()` animates one element, and *which* element depends on the breakpoint:
+
+```
+desktop        sizer = .nv-panels     (the link row is lifted into the bar, so the
+                                       body must not clip)
+tablet/mobile  sizer = .nv-body       (the list lives inside the body)
+```
+
+It wrote the height **inline**. Nothing ever took it back off. So:
+
+1. On desktop, open a mega-menu and close it again → `.nv-panels` is left with
+   `style="height:0px"`.
+2. Drag the window below 1620. The tablet rules want `.nv-panels{height:auto}`,
+   but an inline declaration outranks any stylesheet rule, so it stays 0.
+3. Open the drawer. `.nv-body` sizes itself correctly from the panel's content
+   (704px at 1600x856), the rail renders, the head shows as active — and the
+   mega-menu column inside it is clipped to zero. A tall, correct-looking drawer
+   wrapped around nothing.
+
+That is the whole "sometimes": it only bites after a desktop panel has been
+opened *and closed*, and then only once you cross the breakpoint — which is
+exactly what happens when the build is reviewed by dragging the window.
+
+Crossing with a panel left **open** was the milder version of the same fault:
+`.nv-panels` carried `height:508px` into tablet and the column was clipped short
+rather than to nothing.
+
+## 8.2 Fix
+
+`applyHeight()` now hands back whatever the other element is holding before it
+measures anything:
+
+```js
+if (panelsEl !== node) panelsEl.style.height = '';
+if (body     !== node) body.style.height = '';
+if (panelsEl !== sc)   panelsEl.classList.remove(CLS.scrollable);
+if (body     !== sc)   body.classList.remove(CLS.scrollable);
+```
+
+Order matters — the reset has to happen before `naturalHeight()`, or the
+measurement is taken through the stale height.
+
+## 8.3 Verified
+
+A randomised fuzz that exercises a breakpoint, tears the state down, crosses to a
+different breakpoint and opens there. The detector asserts the scroll container
+has a non-zero client height while the drawer is open.
+
+| Build | Result |
+|---|---|
+| original `navbar.js` (positive control) | **3 failures in 14 runs** — every one `.navbar_panels` inline `height:0px`, clientHeight 0, on `desktop -> tablet` and `mobile -> tablet` |
+| fixed `nav.js` | **0 failures in 16 runs** |
+
+Deterministic check of the reported sequence — desktop, open a panel, close it,
+resize to 1575, open the drawer:
+
+```
+before   .nv-panels  inline 0px    clientHeight 0      <- blank column
+after    .nv-panels  inline (none) clientHeight 704    <- full mega-menu
+```
+
+Reverse direction (tablet -> desktop) also confirmed: panels 508, promo painted.
+
+Section 7.3's whole table was re-run after the fix and is unchanged — 375 list
+scrolls 124px with Company inside, 375 panel scrolls 1002px, 402 drawer bottom
+794, 768 rail drift 0, 1440 panel top 98, 1920 panel top 94 / height 508.

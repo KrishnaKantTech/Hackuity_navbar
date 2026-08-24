@@ -146,17 +146,27 @@
     var sc   = scroller();
     var open = mode() === 'desktop' ? !!activePanel : drawerOpen;
 
+    /* Both the sizer and the scroller swap elements at a breakpoint, so before
+       touching anything, hand back whatever the OTHER element was left holding.
+       Skipping this is what produced the blank mega-menu column: closing a
+       panel on desktop writes `height:0px` inline on .nv-panels, and that
+       inline value outranks the tablet/mobile rule that wants it back at
+       `height:auto`. Cross below 1620, open the drawer, and the drawer sizes
+       itself correctly around a panel column collapsed to nothing. */
+    if (panelsEl !== node) panelsEl.style.height = '';
+    if (body     !== node) body.style.height = '';
+    if (panelsEl !== sc)   panelsEl.classList.remove(CLS.scrollable);
+    if (body     !== sc)   body.classList.remove(CLS.scrollable);
+
     if (!open) {
       node.style.height = '0px';
-      node.classList.remove(CLS.scrollable);
       sc.classList.remove(CLS.scrollable);
       return;
     }
 
-    var want = naturalHeight(node);
+    var want = naturalHeight(node);    /* measured only after the reset above */
     var cap  = maxHeight();
 
-    if (sc !== node) node.classList.remove(CLS.scrollable);
     sc.classList.toggle(CLS.scrollable, want > cap);
     node.style.height = Math.min(want, cap) + 'px';
     sc.scrollTop = 0;                  /* every panel switch starts at the top */

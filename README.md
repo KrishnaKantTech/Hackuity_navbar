@@ -86,5 +86,10 @@ Breakpoints are declared once, in `nav.css`:
 
 `embed.html` is generated from `nav.html` — edit `nav.html`, not the copy inside `embed.html`.
 
+One trap worth knowing if you touch `applyHeight()`: the element that carries the animated height
+**changes with the breakpoint** — `.nv-panels` on desktop, `.nv-body` on tablet and mobile. Whichever
+one is not in use must have its inline `height` cleared, or it walks across the breakpoint and
+overrides the stylesheet. See NOTES.md § 8.
+
 See **NOTES.md** for the Figma source values, the porting map, the mobile-scroll root cause, and the
 full verification log.

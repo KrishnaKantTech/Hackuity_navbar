@@ -1,33 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackuity Navbar</title>
-<link rel="icon" href="favicon.svg">
-
-<!-- the component: these two files are the whole deliverable -->
-<link rel="stylesheet" href="nav.css">
-
-<style>
-  /* ── HOST PAGE ONLY — none of this ships with the component ──────────────
-     nav.css no longer styles `body` at all (Webflow owns that), so the page
-     background that used to live inside the mobile media query now sits here,
-     where a host page belongs. */
-  body{margin:0;font-family:"Aeonik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#5c5768}
-  .host{padding:190px 64px 120px}
-  .host h1{margin:0 0 10px;font-size:40px;line-height:1.1;letter-spacing:-.025em;color:#1d0443}
-  .host p{margin:0;font-size:17px;line-height:1.6;max-width:60ch}
-  .host .filler{height:120vh}
-  @media (max-width:767px){
-    body{background:radial-gradient(50.2% 50% at 50% 50%,#E9E3FF 0%,#FFFFFF 100%) no-repeat fixed}
-    .host{padding:170px 16px 220px}
-    .host h1{font-size:28px}
-  }
-</style>
-</head>
-<body>
-
 <!-- ============================================================================
      HACKUITY NAVBAR  ·  nav.html  ·  v1.0.0
      Structure reference. This is the one-time conversion source for Webflow —
@@ -346,14 +316,3 @@
 </header>
 
 <div class="nv-scrim" data-nav-el="scrim" hidden></div>
-
-<main id="main" class="host">
-  <h1>Hackuity</h1>
-  <p>Host page. The navbar above (or below, on a phone) is the component — everything on this
-     page is just something for it to sit over.</p>
-  <div class="filler"></div>
-</main>
-
-<script defer src="nav.js"></script>
-</body>
-</html>

@@ -62,12 +62,14 @@ Safety, all covered by the test suite:
 | `payload/navbar-singleroot.json` | same, wrapped in one div, if 4 roots are rejected |
 | `payload/control.json` | 3 nodes straight out of Webflow — transport test |
 
-Regenerate after any markup change:
+Regenerate after any markup change — one command does all of them, including
+the copies in this folder:
 
 ```
-python3 tools/nav-to-webflow.py webflow/navbar.webflow.json
-cp webflow/navbar.webflow.json webflow-paste-extension/payload/navbar.json
+python3 tools/regen.py
 ```
+
+They went stale once because the copy was manual. Now it isn't.
 
 ## Scope
 

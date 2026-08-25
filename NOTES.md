@@ -588,3 +588,53 @@ is a hand-made variant and is **stale** as of v1.0.1.
 `webflow/verify-port.js` is the console check to paste into the Webflow preview:
 it counts every `data-nav-el`, every `data-nav-variant`, and flags any element
 that still carries two classes.
+
+## 10.6 htmltoflow — measured, rejected
+
+The flattening in § 10.2 was done to survive the **htmltoflow** app. It wasn't
+enough, and the app is not usable for this component at all. Measured against
+the published output of a real import (`siegcourse.webflow.io/testing`):
+
+| | `nav.html` | published |
+|---|---|---|
+| `<button>` | 7 | **0** |
+| `<svg>` | 18 | **3** |
+| `id` | 9 | **1** |
+| `data-nav-el` | 31 | **0** |
+| `data-nav-panel` | 12 | **0** |
+| `data-nav-variant` | 14 | **0** |
+| `data-nav-icon` | 7 | **0** |
+| `aria-expanded` / `aria-controls` | 7 / 7 | **0** / **0** |
+
+Webflow has no native button element, so all seven `<button>`s were discarded
+outright — six menu items became literally `<li class="nv-item"></li>`, and the
+hamburger vanished. Every panel lost `class="nv-panel"` while keeping `hidden`,
+so nothing could ever open. With no `data-nav-*` left, `nav.js` finds nothing
+and no variant rule matches — which is why both logos rendered at once.
+
+The symptoms reported (dead hover, empty mega menus, two logos) were all one
+cause. Nothing about the markup can fix it: the attributes and the buttons are
+gone before Webflow ever sees them.
+
+**Use the paste payload** (§ 9). It converts `<button>` → `<a>` and wraps icons
+in `.w-embed` deliberately, carries all 120 custom attributes, and was verified
+identical in § 9.4. The Designer will not take it from the OS clipboard —
+"The clipboard is empty" is Webflow's own message, and the reason
+`webflow-paste-extension/` exists.
+
+## 10.7 One command, no stale copies
+
+`webflow-paste-extension/payload/navbar.json` was a hand-made copy and was
+still the pre-flattening build — combos and all — when the extension route came
+back into play. `tools/regen.py` now owns every derived file:
+
+```
+nav.html ─┬─→ embed.html
+          ├─→ webflow/htmltoflow.html
+          ├─→ webflow/navbar.webflow.json          (194 nodes, 4 roots)
+          ├─→ webflow/navbar.webflow.singleroot.json (195 nodes, 1 root)
+          └─→ webflow-paste-extension/payload/{navbar,navbar-singleroot}.json
+```
+
+All four payloads now report 43 styles, **0 combos**, 31 `data-nav-el` and
+14 `data-nav-variant`.

@@ -97,11 +97,23 @@ Breakpoints are declared once, in `nav.css`:
 `nav.js` reads those at runtime, so the script and the media queries cannot drift. Change the token
 **and** the matching `@media` query together.
 
-`embed.html` and `webflow/htmltoflow.html` are generated from `nav.html` — edit `nav.html`, then:
+Everything downstream of `nav.html` is generated — `embed.html`,
+`webflow/htmltoflow.html`, both Designer paste payloads, and the copies inside
+`webflow-paste-extension/payload/`. Edit `nav.html`, then:
 
 ```
 python3 tools/regen.py
 ```
+
+## Getting it into Webflow
+
+The Designer does **not** read the OS clipboard — its own copy leaves the
+pasteboard empty, and pasting a payload from another tab is rejected with
+"The clipboard is empty." Use `webflow-paste-extension/` (load unpacked, arm,
+then ⌘V on the canvas); its README has the detail.
+
+The **htmltoflow** app is not an option for this component: it deletes every
+`<button>`, every `data-*` attribute, and 15 of the 18 `<svg>`s. See NOTES § 10.6.
 
 One trap worth knowing if you touch `applyHeight()`: the element that carries the animated height
 **changes with the breakpoint** — `.nv-panels` on desktop, `.nv-body` on tablet and mobile. Whichever

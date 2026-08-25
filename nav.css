@@ -108,8 +108,10 @@
   -webkit-font-smoothing:antialiased;
 }
 
-/* anchors — Webflow styles "All Links"; opt out inside the component */
-.nv-skip-link,.nv-logo,.nv-link,.nv-btn,.nv-card,.nv-promo-cta{
+/* anchors — Webflow styles "All Links"; opt out inside the component.
+   .nv-menu-btn is in this list because the native build renders the toggle as
+   an <a href="#">, not the <button> nav.html declares — see NOTES.md § 12.3. */
+.nv-skip-link,.nv-logo,.nv-link,.nv-btn,.nv-card,.nv-promo-cta,.nv-menu-btn{
   color:inherit;
   text-decoration:none;
 }

@@ -28,17 +28,17 @@ Open `embed.html` in a browser to see it. Resize past 1620 / 768 / 480 to cross 
 Page Settings → Custom Code → **Head** (or Project Settings, for a site-wide navbar):
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.css">
 ```
 
 …and **Footer**:
 
 ```html
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.js"></script>
 ```
 
 Pin a **tag**, never `@main` — jsDelivr caches aggressively and an untagged URL would let any push
-edit the live site. To release: commit, `git tag v1.1.1`, `git push --tags`, bump the URLs.
+edit the live site. To release: commit, `git tag v1.1.2`, `git push --tags`, bump the URLs.
 
 `nav.css` loads Aeonik with relative URLs, so `fonts/` must ship inside the same tag. Delete that
 `@font-face` block if Webflow hosts the font instead.

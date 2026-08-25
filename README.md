@@ -7,6 +7,7 @@ nav.css     ships to the CDN
 nav.js      ships to the CDN
 nav.html    structure reference — the one-time conversion source for Webflow
 embed.html  demo host page (generated from nav.html)
+webflow/htmltoflow.html  paste target for the htmltoflow app — CDN link + markup + CDN script
 preview.html  all three breakpoints side by side
 fonts/      Aeonik Regular + Medium (woff2), Bold (otf)
 NOTES.md    Figma measurements, decisions, verification log, porting map
@@ -27,13 +28,13 @@ Open `embed.html` in a browser to see it. Resize past 1620 / 768 / 480 to cross 
 Project Settings → Custom Code → **Head**:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/OWNER/REPO@v1.0.0/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.css">
 ```
 
 …and **Footer**:
 
 ```html
-<script defer src="https://cdn.jsdelivr.net/gh/OWNER/REPO@v1.0.0/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.js"></script>
 ```
 
 Pin a **tag**, never `@main` — jsDelivr caches aggressively and an untagged URL would let any push
@@ -43,6 +44,17 @@ edit the live site. To release: commit, `git tag v1.0.1`, `git push --tags`, bum
 `@font-face` block if Webflow hosts the font instead.
 
 ## What the port must preserve
+
+Every element carries **exactly one** class — no combos. Anything that used to be a BEM modifier or
+a second class is now `data-nav-variant`, matched in `nav.css` with `~=`:
+
+```html
+<a class="nv-btn" data-nav-variant="ghost login">        →  .nv-btn[data-nav-variant~="ghost"]
+```
+
+That is deliberate: HTML→Webflow importers (htmltoflow and friends) keep the first class and drop the
+rest into a bogus `class` attribute, which silently kills every modifier. One class per element means
+there is nothing to lose, and the variant lands in Webflow's **Attributes** panel where it belongs.
 
 Rename any `nv-` class you like — **`nav.js` never reads one.** It finds every element through
 data attributes, and those must survive the conversion:
@@ -61,6 +73,7 @@ data attributes, and those must survive the conversion:
 | `data-nav-el="toggle"` / `"toggle-label"` | the hamburger and its text |
 | `data-nav-el="scrim"` | the full-page dim layer |
 | `data-nav-el="logo-standalone"` | the mobile logo above the drawer |
+| `data-nav-variant="…"` | the 14 elements that used to carry a second class |
 
 `data-nav-state` is written by JS and read by CSS to swap the hamburger / ✕ / back icons.
 `data-nav-icon` marks the ~30 icon tiles for the SVG swap that is still outstanding.
@@ -84,7 +97,11 @@ Breakpoints are declared once, in `nav.css`:
 `nav.js` reads those at runtime, so the script and the media queries cannot drift. Change the token
 **and** the matching `@media` query together.
 
-`embed.html` is generated from `nav.html` — edit `nav.html`, not the copy inside `embed.html`.
+`embed.html` and `webflow/htmltoflow.html` are generated from `nav.html` — edit `nav.html`, then:
+
+```
+python3 tools/regen.py
+```
 
 One trap worth knowing if you touch `applyHeight()`: the element that carries the animated height
 **changes with the breakpoint** — `.nv-panels` on desktop, `.nv-body` on tablet and mobile. Whichever

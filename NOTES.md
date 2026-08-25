@@ -493,3 +493,98 @@ beside the original markup:
 three breakpoints (no `#` jump), the logo SVG measures 34px tall inside its
 `.w-embed` (so `display:contents` does its job), and only one hamburger icon is
 visible at a time (so the combo classes survive the round trip).
+
+---
+
+# 10. v1.0.1 — combo classes flattened into `data-nav-variant`
+
+## 10.1 Cause
+
+The port is going through the **htmltoflow** app (Webflow marketplace) rather
+than the JSON paste route of § 9. It handles an element with two classes badly:
+it keeps the **first** as the Webflow class and drops the rest into a custom
+attribute literally named `class` —
+
+```
+<a class="nv-logo nv-logo--inbar">   →   Webflow class: nv-logo
+                                          Attributes:   class = nv-logo--inbar
+```
+
+Every modifier rule in `nav.css` is a standalone selector (`.nv-logo--inbar{}`),
+so the modifier silently stops applying on all 14 elements that carried a
+second class. Nothing errors — the navbar just renders slightly wrong
+everywhere, which is the worst failure mode to debug in the Designer.
+
+## 10.2 Fix
+
+**One class per element.** The second class became `data-nav-variant`, a
+space-separated list matched with `~=`:
+
+| was | now |
+|---|---|
+| `class="nv-logo nv-logo--inbar"` | `class="nv-logo" data-nav-variant="inbar"` |
+| `class="nv-btn nv-btn--ghost nv-login"` | `class="nv-btn" data-nav-variant="ghost login"` |
+| `class="nv-card nv-is-disabled"` | `class="nv-card" data-nav-variant="disabled"` |
+
+15 CSS selectors were rewritten to match. There is now nothing for an importer
+to lose: the class lands in Webflow's Style panel, the variant in the
+Attributes panel, and neither can overwrite the other.
+
+## 10.3 The specificity trap
+
+The obvious rewrite is wrong:
+
+```css
+.nv-logo--standalone            /* (0,1,0) */
+.nv-logo[data-nav-variant~="standalone"]   /* (0,2,0)  ← outranks base rules it used to lose to */
+```
+
+The first diff run caught it: the standalone logo went from `color:#5c5768`
+(inherited from the host page) to `#202020`, because the shared
+`.nv-wrap,.nv-logo--standalone,.nv-skip-link{}` reset at the top of the file
+suddenly beat the later `.nv-logo{}` rule.
+
+`:where()` contributes **zero** specificity, so this restores the old cascade
+exactly:
+
+```css
+.nv-logo:where([data-nav-variant~="standalone"])   /* (0,1,0) — identical */
+```
+
+All 15 use that form except `disabled`, which replaced `.nv-card.nv-is-disabled`
+— already (0,2,0), so it stays a bare attribute selector.
+
+## 10.4 Verified
+
+`_diff.html` (temporary) loaded the pre-change build and the new one in
+same-origin iframes at the same width, then compared **34 computed properties
+on every element** in the navbar subtree (~200 elements):
+
+| width | closed | Platform open | Partners open (`thirds`) |
+|---|---|---|---|
+| 1920 | 0 diffs | 0 diffs | 0 diffs |
+| 1620 | 0 diffs | — | — |
+| 1024 | 0 diffs | — | 0 diffs |
+| 768 | 0 diffs | — | — |
+| 402 | 0 diffs | 0 diffs | 0 diffs |
+
+Zero differences, closed and open, at every breakpoint. Also re-checked by hand:
+ghost vs primary button, the greyed-out "Partner Program" card and its muted
+icon tile, and one hamburger icon visible at a time.
+
+## 10.5 Generated files
+
+`embed.html` and `webflow/htmltoflow.html` are both copies of `nav.html`. After
+any markup edit:
+
+```
+python3 tools/regen.py
+```
+
+`webflow/navbar.webflow.json` (§ 9 route) was regenerated too — combo count is
+now **0**, which is the whole point. `webflow/navbar.webflow.singleroot.json`
+is a hand-made variant and is **stale** as of v1.0.1.
+
+`webflow/verify-port.js` is the console check to paste into the Webflow preview:
+it counts every `data-nav-el`, every `data-nav-variant`, and flags any element
+that still carries two classes.

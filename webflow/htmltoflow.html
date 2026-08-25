@@ -1,59 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hackuity Navbar</title>
-<link rel="icon" href="favicon.svg">
-
-<!-- the component: these two files are the whole deliverable -->
-<link rel="stylesheet" href="nav.css">
-
-<style>
-  /* ── HOST PAGE ONLY — none of this ships with the component ──────────────
-     nav.css no longer styles `body` at all (Webflow owns that), so the page
-     background that used to live inside the mobile media query now sits here,
-     where a host page belongs. */
-  body{margin:0;font-family:"Aeonik",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#5c5768}
-  .host{padding:190px 64px 120px}
-  .host h1{margin:0 0 10px;font-size:40px;line-height:1.1;letter-spacing:-.025em;color:#1d0443}
-  .host p{margin:0;font-size:17px;line-height:1.6;max-width:60ch}
-  .host .filler{height:120vh}
-  @media (max-width:767px){
-    body{background:radial-gradient(50.2% 50% at 50% 50%,#E9E3FF 0%,#FFFFFF 100%) no-repeat fixed}
-    .host{padding:170px 16px 220px}
-    .host h1{font-size:28px}
-  }
-</style>
-</head>
-<body>
-
-<!-- ============================================================================
-     HACKUITY NAVBAR  ·  nav.html  ·  v1.0.1
-     Structure reference. This is the one-time conversion source for Webflow —
-     rebuild this tree with native Webflow elements, then let nav.css / nav.js
-     ride along from the CDN. Nothing here is generated at runtime.
-
-       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.css">
-       <script defer      src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.js"></script>
-
-     Two parallel naming systems, on purpose:
-       class="nv-*"        styling only. Rename freely in Webflow; nav.js does
-                           not read a single one of them. EXACTLY ONE class per
-                           element — no combos, so the HTML→Webflow importer
-                           cannot lose the second one.
-       data-nav-variant="*"  what used to be a BEM modifier / second class.
-                           Space-separated, matched in nav.css with ~=, e.g.
-                           .nv-btn[data-nav-variant~="ghost"]. Lands in
-                           Webflow's Attributes panel, not the Style panel.
-       data-nav-el="*"     the JS contract. These must survive the port exactly.
-       data-nav-panel="*"  pairs an <li> with the <div> it opens.
-       data-nav-icon="*"   marks the ~30 icon tiles for the SVG swap (pass 2).
-
-     ONE DOM for all three breakpoints — a single <ul>, a single set of panels.
-     Desktop lifts the list into the bar, tablet turns it into a 193px rail,
-     mobile turns it into a drawer. No markup is duplicated per breakpoint.
-     ============================================================================ -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.css">
 
 <a class="nv-skip-link" href="#main">Skip to content</a>
 
@@ -353,13 +298,4 @@
 
 <div class="nv-scrim" data-nav-el="scrim" hidden></div>
 
-<main id="main" class="host">
-  <h1>Hackuity</h1>
-  <p>Host page. The navbar above (or below, on a phone) is the component — everything on this
-     page is just something for it to sit over.</p>
-  <div class="filler"></div>
-</main>
-
-<script defer src="nav.js"></script>
-</body>
-</html>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.js"></script>

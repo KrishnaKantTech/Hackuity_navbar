@@ -37,7 +37,7 @@
 
 /* ============================================================================
    1. TOKENS
-   Kept on :root because `.nv-scrim` and `.nv-logo--standalone` are siblings of
+   Kept on :root because `.nv-scrim` and `.nv-logo:where([data-nav-variant~="standalone"])` are siblings of
    `.nv-wrap`, not descendants — a component-scoped block would not reach them.
    The `--nv-` prefix is what keeps them from colliding with Webflow variables.
    ========================================================================= */
@@ -100,9 +100,9 @@
    ========================================================================= */
 .nv-wrap,.nv-wrap *,.nv-wrap *::before,.nv-wrap *::after,
 .nv-scrim,.nv-skip-link,
-.nv-logo--standalone,.nv-logo--standalone *{box-sizing:border-box}
+.nv-logo:where([data-nav-variant~="standalone"]),.nv-logo:where([data-nav-variant~="standalone"]) *{box-sizing:border-box}
 
-.nv-wrap,.nv-logo--standalone,.nv-skip-link{
+.nv-wrap,.nv-logo:where([data-nav-variant~="standalone"]),.nv-skip-link{
   font-family:var(--nv-font);
   color:var(--nv-text-primary);
   -webkit-font-smoothing:antialiased;
@@ -128,7 +128,7 @@
   -webkit-appearance:none;
           appearance:none;
 }
-.nv-card.nv-is-disabled{cursor:default}
+.nv-card[data-nav-variant~="disabled"]{cursor:default}
 
 /* the <ul> — this is the rule that survives Webflow's ul{padding-left:40px} */
 .nv-menu{margin:0;padding:0;list-style:none}
@@ -137,13 +137,13 @@
 .nv-group-label,.nv-promo-title,.nv-promo-sub,.nv-todo{margin:0}
 
 /* inline SVG icons fill their box */
-.nv-wrap svg,.nv-logo--standalone svg{display:block;width:100%;height:100%}
+.nv-wrap svg,.nv-logo:where([data-nav-variant~="standalone"]) svg{display:block;width:100%;height:100%}
 
 /* Webflow wraps every Embed element in a <div class="w-embed">. After the port
    the icons are Embeds, so that wrapper has to drop out of the layout — left in
    flow the SVG would measure 100% of an auto-height div and collapse to nothing.
    Harmless outside Webflow: there is no .w-embed there. */
-.nv-wrap .w-embed,.nv-logo--standalone .w-embed{display:contents}
+.nv-wrap .w-embed,.nv-logo:where([data-nav-variant~="standalone"]) .w-embed{display:contents}
 
 .nv-skip-link{
   position:absolute;left:-9999px;top:0;z-index:999;
@@ -152,7 +152,7 @@
 .nv-skip-link:focus{left:16px;top:16px}
 
 .nv-wrap :where(a,button):focus-visible,
-.nv-logo--standalone:focus-visible,
+.nv-logo:where([data-nav-variant~="standalone"]):focus-visible,
 .nv-skip-link:focus-visible{
   outline:2px solid var(--nv-accent-9);
   outline-offset:3px;
@@ -172,7 +172,7 @@
   font-size:.8125em;line-height:.8125em;font-weight:500;letter-spacing:-.021em;
   color:var(--nv-text-logo);white-space:nowrap;
 }
-.nv-logo--standalone{display:none}
+.nv-logo:where([data-nav-variant~="standalone"]){display:none}
 
 
 /* ============================================================================
@@ -264,10 +264,10 @@
   font-size:18px;line-height:26px;white-space:nowrap;
   transition:background-color var(--nv-dur) var(--nv-ease);
 }
-.nv-btn--ghost{font-weight:400;color:var(--nv-accent-alpha-11)}
-.nv-btn--ghost:hover{background:var(--nv-neutral-alpha-3)}
-.nv-btn--primary{font-weight:500;color:var(--nv-accent-contrast);background:var(--nv-accent-9)}
-.nv-btn--primary:hover{background:var(--nv-accent-9-hover)}
+.nv-btn:where([data-nav-variant~="ghost"]){font-weight:400;color:var(--nv-accent-alpha-11)}
+.nv-btn:where([data-nav-variant~="ghost"]):hover{background:var(--nv-neutral-alpha-3)}
+.nv-btn:where([data-nav-variant~="primary"]){font-weight:500;color:var(--nv-accent-contrast);background:var(--nv-accent-9)}
+.nv-btn:where([data-nav-variant~="primary"]):hover{background:var(--nv-accent-9-hover)}
 
 .nv-menu-btn{
   display:none;align-items:center;justify-content:center;gap:var(--nv-space-3);
@@ -279,9 +279,9 @@
 
 /* icon swap is driven by the attribute, never by a class — see nav.js */
 .nv-ico{width:20px;height:20px;flex:0 0 auto;display:none}
-.nv-menu-btn[data-nav-state="menu"]  .nv-ico--menu {display:block}
-.nv-menu-btn[data-nav-state="close"] .nv-ico--close{display:block}
-.nv-menu-btn[data-nav-state="back"]  .nv-ico--back {display:block}
+.nv-menu-btn[data-nav-state="menu"]  .nv-ico:where([data-nav-variant~="menu"]) {display:block}
+.nv-menu-btn[data-nav-state="close"] .nv-ico:where([data-nav-variant~="close"]){display:block}
+.nv-menu-btn[data-nav-state="back"]  .nv-ico:where([data-nav-variant~="back"]) {display:block}
 .nv-menu-btn-label{font-size:18px;line-height:26px;font-weight:400}
 
 
@@ -329,8 +329,8 @@
   text-transform:uppercase;color:var(--nv-text-disabled);
 }
 .nv-cards{display:flex;flex-direction:column;gap:var(--nv-space-2)}   /* 8 */
-.nv-cards--loose{gap:var(--nv-space-10)}                              /* 80 */
-.nv-cards--tight{gap:0}
+.nv-cards:where([data-nav-variant~="loose"]){gap:var(--nv-space-10)}                              /* 80 */
+.nv-cards:where([data-nav-variant~="tight"]){gap:0}
 
 .nv-card{
   display:flex;align-items:flex-start;gap:var(--nv-space-4);   /* 16 */
@@ -339,10 +339,10 @@
   transition:background-color var(--nv-dur) var(--nv-ease);
 }
 a.nv-card:hover{background:var(--nv-icon-tile-bg)}
-.nv-card.nv-is-disabled .nv-card-title,
-.nv-card.nv-is-disabled .nv-card-desc{color:var(--nv-text-disabled)}
+.nv-card[data-nav-variant~="disabled"] .nv-card-title,
+.nv-card[data-nav-variant~="disabled"] .nv-card-desc{color:var(--nv-text-disabled)}
 .nv-card-icon{flex:0 0 auto;width:60px;height:60px;border-radius:var(--nv-radius-5);background:var(--nv-icon-tile-bg)}
-.nv-card-icon--muted{background:var(--nv-neutral-alpha-3)}
+.nv-card-icon:where([data-nav-variant~="muted"]){background:var(--nv-neutral-alpha-3)}
 .nv-card-body{flex:1 0 0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:var(--nv-space-1)}
 .nv-card-head{display:flex;flex-wrap:wrap;align-items:center;gap:var(--nv-space-2) var(--nv-space-4)}
 .nv-card-title{font-size:20px;line-height:28px;font-weight:700;letter-spacing:-.08px;color:var(--nv-text-heading)}
@@ -357,24 +357,24 @@ a.nv-card:hover{background:var(--nv-icon-tile-bg)}
 }
 /* placeholder hook: Figma has not been read for the neutral tag yet, so this
    currently matches .nv-tag exactly. Keep it — the markup carries the class. */
-.nv-tag--plain{padding:var(--nv-space-1) var(--nv-space-2)}
+.nv-tag:where([data-nav-variant~="plain"]){padding:var(--nv-space-1) var(--nv-space-2)}
 .nv-tag-ico{width:16px;height:16px;flex:0 0 auto}
 
 .nv-split{width:1px;align-self:stretch;background:var(--nv-gray-4)}
 
 /* Partners — Figma 212:7450 is a 3 x 1fr grid, so its column is 517.33 wide
    and the descriptions sit on one line. */
-.nv-panel--thirds .nv-groups{
+.nv-panel:where([data-nav-variant~="thirds"]) .nv-groups{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:var(--nv-space-10);
   padding:var(--nv-space-8) var(--nv-space-7) var(--nv-space-7);
 }
-.nv-panel--thirds .nv-group{max-width:none}
-.nv-panel--thirds .nv-split{justify-self:center}
+.nv-panel:where([data-nav-variant~="thirds"]) .nv-group{max-width:none}
+.nv-panel:where([data-nav-variant~="thirds"]) .nv-split{justify-self:center}
 /* Figma draws Platform's divider 404 tall against a 420 tall column */
 .nv-panel[data-nav-panel="platform"] .nv-split{align-self:flex-start;height:404px}
-.nv-group--empty{min-height:1px}
+.nv-group:where([data-nav-variant~="empty"]){min-height:1px}
 .nv-todo{font-size:16px;line-height:24px;color:var(--nv-text-disabled)}
 
 .nv-scrim{
@@ -408,7 +408,7 @@ a.nv-card:hover{background:var(--nv-icon-tile-bg)}
     padding:var(--nv-space-4) var(--nv-space-4) var(--nv-space-4) var(--nv-space-5);
   }
   .nv-actions{flex:0 0 auto}
-  .nv-login{display:none}
+  .nv-btn:where([data-nav-variant~="login"]){display:none}
   .nv-menu-btn{display:inline-flex}
 
   /* the body itself becomes the clipped animator — the rail lives inside it,
@@ -477,9 +477,9 @@ a.nv-card:hover{background:var(--nv-icon-tile-bg)}
     padding:var(--nv-space-8) var(--nv-space-7) var(--nv-space-7);
   }
   .nv-group{max-width:none;width:100%}
-  .nv-cards--loose{gap:var(--nv-space-2)}
+  .nv-cards:where([data-nav-variant~="loose"]){gap:var(--nv-space-2)}
   .nv-split{display:none}
-  .nv-group--empty{display:none}
+  .nv-group:where([data-nav-variant~="empty"]){display:none}
 }
 
 
@@ -498,8 +498,8 @@ a.nv-card:hover{background:var(--nv-icon-tile-bg)}
   .nv-wrap{top:auto;bottom:var(--nv-space-5);left:var(--nv-bar-inset);right:var(--nv-bar-inset)}
   .nv-bar{gap:var(--nv-space-4);padding:var(--nv-space-4);z-index:2}
 
-  .nv-logo--inbar{display:none}
-  .nv-logo--standalone{
+  .nv-logo:where([data-nav-variant~="inbar"]){display:none}
+  .nv-logo:where([data-nav-variant~="standalone"]){
     display:block;position:absolute;top:80px;left:50%;margin-left:-111px;
     width:222px;height:43px;font-size:43px;z-index:98;
   }
@@ -581,7 +581,7 @@ a.nv-card:hover{background:var(--nv-icon-tile-bg)}
    9. REDUCED MOTION — scoped, so it cannot disable animation page-wide
    ========================================================================= */
 @media (prefers-reduced-motion:reduce){
-  .nv-wrap,.nv-wrap *,.nv-scrim,.nv-logo--standalone{
+  .nv-wrap,.nv-wrap *,.nv-scrim,.nv-logo:where([data-nav-variant~="standalone"]){
     transition-duration:.001ms !important;
     animation-duration:.001ms !important;
   }

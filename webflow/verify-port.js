@@ -40,14 +40,26 @@
     if (k && pKeys.indexOf(k) < 0) { console.error('✗ item "' + k + '" has no matching panel'); bad++; }
   });
 
-  var wantVar = { standalone:1, inbar:1, ghost:1, login:1, primary:1, menu:1, close:1, back:1,
-                  loose:1, tight:1, plain:1, thirds:1, disabled:1, muted:1, empty:1 };
-  Object.keys(wantVar).forEach(function (v) {
-    var n = D.querySelectorAll('[data-nav-variant~="' + v + '"]').length;
-    if (n !== wantVar[v]) { console.error('✗ data-nav-variant~="' + v + '" → ' + n + ', expected ' + wantVar[v]); bad++; }
+  var wantCls = { 'nv-logo--standalone':1, 'nv-logo--inbar':1, 'nv-btn--ghost':1, 'nv-login':1,
+                  'nv-btn--primary':1, 'nv-ico--menu':1, 'nv-ico--close':1, 'nv-ico--back':1,
+                  'nv-cards--loose':1, 'nv-cards--tight':1, 'nv-tag--plain':1, 'nv-panel--thirds':1,
+                  'nv-is-disabled':1, 'nv-card-icon--muted':1, 'nv-group--empty':1 };
+  Object.keys(wantCls).forEach(function (c) {
+    var n = D.getElementsByClassName(c).length;
+    if (n !== wantCls[c]) { console.error('X .' + c + ' -> ' + n + ', expected ' + wantCls[c]); bad++; }
   });
-  [].slice.call(D.querySelectorAll('[class*=" nv-"]')).forEach(function (e) {
-    console.error('✗ combo class survived: "' + e.className + '"'); bad++;
+  // every modifier must sit alongside its base class, or nav.css will not match
+  var pairs = [['nv-logo--standalone','nv-logo'], ['nv-logo--inbar','nv-logo'],
+               ['nv-btn--ghost','nv-btn'], ['nv-login','nv-btn'], ['nv-btn--primary','nv-btn'],
+               ['nv-ico--menu','nv-ico'], ['nv-ico--close','nv-ico'], ['nv-ico--back','nv-ico'],
+               ['nv-cards--loose','nv-cards'], ['nv-cards--tight','nv-cards'],
+               ['nv-tag--plain','nv-tag'], ['nv-panel--thirds','nv-panel'],
+               ['nv-is-disabled','nv-card'], ['nv-card-icon--muted','nv-card-icon'],
+               ['nv-group--empty','nv-group']];
+  pairs.forEach(function (p) {
+    [].slice.call(D.getElementsByClassName(p[0])).forEach(function (el) {
+      if (!el.classList.contains(p[1])) { console.error('X .' + p[0] + ' is missing its base .' + p[1]); bad++; }
+    });
   });
 
   var css = [].slice.call(D.styleSheets).some(function (s) { return (s.href || '').indexOf('nav.css') > -1; });

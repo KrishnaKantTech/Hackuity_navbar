@@ -1,9 +1,9 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.css">
 
 <a class="nv-skip-link" href="#main">Skip to content</a>
 
 <!-- Mobile only: the logo leaves the bar and centres at the top of the page. -->
-<a class="nv-logo" data-nav-variant="standalone" href="/" aria-label="Hackuity — home"
+<a class="nv-logo nv-logo--standalone" href="/" aria-label="Hackuity — home"
    data-nav-el="logo-standalone">
   <span class="nv-logo-mark" aria-hidden="true">
     <svg viewBox="0 0 48 47" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
@@ -25,7 +25,7 @@
   <div class="nv-shell" id="nv-navbar-shell" data-nav-el="shell">
 
     <div class="nv-bar" data-nav-el="bar">
-      <a class="nv-logo" data-nav-variant="inbar" href="/" aria-label="Hackuity — home" data-nav-el="logo">
+      <a class="nv-logo nv-logo--inbar" href="/" aria-label="Hackuity — home" data-nav-el="logo">
         <span class="nv-logo-mark" aria-hidden="true">
           <svg viewBox="0 0 48 47" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
             <path d="M34.7944 0H12.2759C7.84468 0 5.62905 0 3.95499 0.89722C2.66183 1.5903 1.60103 2.64399 0.903273 3.92848C0 5.59132 0 7.7921 0 12.1937V34.5612C0 38.9627 0 41.1635 0.903273 42.8264C1.60103 44.1109 2.66183 45.1646 3.95499 45.8576C5.62905 46.7549 7.84468 46.7549 12.2759 46.7549H34.7944C39.2256 46.7549 41.4413 46.7549 43.1153 45.8576C44.4085 45.1646 45.4693 44.1109 46.167 42.8264C47.0703 41.1635 47.0703 38.9627 47.0703 34.5612V12.1937C47.0703 7.7921 47.0703 5.59132 46.167 3.92848C45.4693 2.64399 44.4085 1.5903 43.1153 0.89722C41.4413 0 39.2256 0 34.7944 0Z" fill="#9675F7"/>
@@ -36,26 +36,26 @@
       </a>
 
       <div class="nv-actions">
-        <a class="nv-btn" data-nav-variant="ghost login" href="/login">Login</a>
+        <a class="nv-btn nv-btn--ghost nv-login" href="/login">Login</a>
         <div class="nv-demo-wrap">
-          <a class="nv-btn" data-nav-variant="primary" href="/demo">Book a Demo</a>
+          <a class="nv-btn nv-btn--primary" href="/demo">Book a Demo</a>
         </div>
 
         <button class="nv-menu-btn" type="button" data-nav-el="toggle"
                 aria-expanded="false" aria-controls="nv-navbar-body" data-nav-state="menu">
-          <span class="nv-ico" data-nav-variant="menu" aria-hidden="true">
+          <span class="nv-ico nv-ico--menu" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" focusable="false">
               <line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>
             </svg>
           </span>
-          <span class="nv-ico" data-nav-variant="close" aria-hidden="true">
+          <span class="nv-ico nv-ico--close" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" focusable="false">
               <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
             </svg>
           </span>
-          <span class="nv-ico" data-nav-variant="back" aria-hidden="true">
+          <span class="nv-ico nv-ico--back" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                  stroke-linecap="round" stroke-linejoin="round" focusable="false">
               <path d="m15 18-6-6 6-6"/>
@@ -216,7 +216,7 @@
 
             <section class="nv-group">
               <h2 class="nv-group-label">Connected intelligence</h2>
-              <div class="nv-cards" data-nav-variant="loose">
+              <div class="nv-cards nv-cards--loose">
                 <a class="nv-card" href="/platform/ai-copilot">
                   <span class="nv-card-icon" data-nav-icon="ai-copilot" aria-hidden="true"></span>
                   <span class="nv-card-body">
@@ -240,7 +240,7 @@
                   <span class="nv-card-body">
                     <span class="nv-card-head">
                       <span class="nv-card-title">Hackuity connectors</span>
-                      <span class="nv-tag" data-nav-variant="plain">130+</span>
+                      <span class="nv-tag nv-tag--plain">130+</span>
                     </span>
                     <span class="nv-card-desc">Connect your security stack in minutes</span>
                   </span>
@@ -251,11 +251,11 @@
         </div>
 
         <!-- ============ PARTNERS — Figma 212:7449 ============ -->
-        <div class="nv-panel" data-nav-variant="thirds" id="nv-panel-partners" data-nav-el="panel" data-nav-panel="partners" hidden>
+        <div class="nv-panel nv-panel--thirds" id="nv-panel-partners" data-nav-el="panel" data-nav-panel="partners" hidden>
           <div class="nv-groups">
             <section class="nv-group">
               <h2 class="nv-group-label">Partners</h2>
-              <div class="nv-cards" data-nav-variant="tight">
+              <div class="nv-cards nv-cards--tight">
                 <a class="nv-card" href="/partners">
                   <span class="nv-card-icon" data-nav-icon="partners" aria-hidden="true"></span>
                   <span class="nv-card-body">
@@ -263,8 +263,8 @@
                     <span class="nv-card-desc">Explore our technology and strategic partner ecosystem</span>
                   </span>
                 </a>
-                <span class="nv-card" data-nav-variant="disabled" aria-disabled="true">
-                  <span class="nv-card-icon" data-nav-variant="muted" aria-hidden="true"></span>
+                <span class="nv-card nv-is-disabled" aria-disabled="true">
+                  <span class="nv-card-icon nv-card-icon--muted" aria-hidden="true"></span>
                   <span class="nv-card-body">
                     <span class="nv-card-title">Partner Program</span>
                     <span class="nv-card-desc">Coming soon</span>
@@ -273,7 +273,7 @@
               </div>
             </section>
             <div class="nv-split" aria-hidden="true"></div>
-            <section class="nv-group" data-nav-variant="empty" aria-hidden="true"></section>
+            <section class="nv-group nv-group--empty" aria-hidden="true"></section>
           </div>
         </div>
 
@@ -298,4 +298,4 @@
 
 <div class="nv-scrim" data-nav-el="scrim" hidden></div>
 
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.js"></script>

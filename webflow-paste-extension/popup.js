@@ -207,6 +207,31 @@ btnDiag.addEventListener('click', async () => {
   } catch (e) { log('❌ ' + e.message, 'err'); }
 });
 
+/* The popup is a fresh document every time it opens, so it starts out knowing
+   nothing about a page that may already be armed. Ask the tab on load, and
+   re-enable the buttons that act on an existing arm. */
+(async function initFromPage() {
+  try {
+    const tab = await webflowTab();
+    const frames = await frameReport(tab.id);
+    const armed = frames.filter((f) => f.armed);
+    const served = frames.filter((f) => f.served && f.served.length);
+    if (armed.length) {
+      btnSynth.disabled = false;
+      btnDisarm.disabled = false;
+      log('Already armed in ' + armed.length + ' of ' + frames.length +
+          ' frame(s).\nClick the canvas and press Cmd+V, or Arm again to reset.', 'ok');
+      startPolling(tab.id);
+    } else if (served.length) {
+      log('Previous run served: ' +
+          served.map((f) => f.served.join(', ')).join(' / ') +
+          '\nArm again to retry.', 'warn');
+    }
+  } catch (e) {
+    log(e.message);
+  }
+})();
+
 btnDisarm.addEventListener('click', async () => {
   clearInterval(pollTimer);
   try {

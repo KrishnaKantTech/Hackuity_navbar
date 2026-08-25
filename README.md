@@ -7,7 +7,7 @@ nav.css     ships to the CDN
 nav.js      ships to the CDN
 nav.html    structure reference — the one-time conversion source for Webflow
 embed.html  demo host page (generated from nav.html)
-webflow/htmltoflow.html  paste target for the htmltoflow app — CDN link + markup + CDN script
+webflow/htmltoflow.html  Code Embed payload for the fallback page — CDN link + markup + CDN script
 preview.html  all three breakpoints side by side
 fonts/      Aeonik Regular + Medium (woff2), Bold (otf)
 NOTES.md    Figma measurements, decisions, verification log, porting map
@@ -25,36 +25,39 @@ Open `embed.html` in a browser to see it. Resize past 1620 / 768 / 480 to cross 
 
 ## Install in Webflow
 
-Project Settings → Custom Code → **Head**:
+Page Settings → Custom Code → **Head** (or Project Settings, for a site-wide navbar):
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.css">
 ```
 
 …and **Footer**:
 
 ```html
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.0.1/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.js"></script>
 ```
 
 Pin a **tag**, never `@main` — jsDelivr caches aggressively and an untagged URL would let any push
-edit the live site. To release: commit, `git tag v1.0.1`, `git push --tags`, bump the URLs.
+edit the live site. To release: commit, `git tag v1.1.1`, `git push --tags`, bump the URLs.
 
 `nav.css` loads Aeonik with relative URLs, so `fonts/` must ship inside the same tag. Delete that
 `@font-face` block if Webflow hosts the font instead.
 
 ## What the port must preserve
 
-Every element carries **exactly one** class — no combos. Anything that used to be a BEM modifier or
-a second class is now `data-nav-variant`, matched in `nav.css` with `~=`:
+Combo classes are **back** as of v1.1.0. The `data-nav-variant` flattening in
+v1.0.1 existed only to survive the htmltoflow importer; the Webflow MCP creates
+real style blocks, including combo chains up to three deep, so there is nothing
+left to lose the second class:
 
 ```html
-<a class="nv-btn" data-nav-variant="ghost login">        →  .nv-btn[data-nav-variant~="ghost"]
+<a class="nv-btn nv-btn--ghost nv-login">   →   .nv-btn.nv-btn--ghost.nv-login
 ```
 
-That is deliberate: HTML→Webflow importers (htmltoflow and friends) keep the first class and drop the
-rest into a bogus `class` attribute, which silently kills every modifier. One class per element means
-there is nothing to lose, and the variant lands in Webflow's **Attributes** panel where it belongs.
+The MCP drops any class that is not already a Webflow style, so the styles are
+created **first** — all 58 of them, with empty properties. The Style panel gets
+the class; every declaration still comes from `nav.css` on the CDN. See
+NOTES.md § 12.
 
 Rename any `nv-` class you like — **`nav.js` never reads one.** It finds every element through
 data attributes, and those must survive the conversion:
@@ -73,7 +76,6 @@ data attributes, and those must survive the conversion:
 | `data-nav-el="toggle"` / `"toggle-label"` | the hamburger and its text |
 | `data-nav-el="scrim"` | the full-page dim layer |
 | `data-nav-el="logo-standalone"` | the mobile logo above the drawer |
-| `data-nav-variant="…"` | the 14 elements that used to carry a second class |
 
 `data-nav-state` is written by JS and read by CSS to swap the hamburger / ✕ / back icons.
 `data-nav-icon` marks the ~30 icon tiles for the SVG swap that is still outstanding.
@@ -107,14 +109,25 @@ python3 tools/regen.py
 
 ## Getting it into Webflow
 
-**One Code Embed.** In the Designer: Add panel → double-click **Code Embed** →
-paste the contents of `webflow/htmltoflow.html` into the code editor → Save &
-Close → Publish. The embed carries the CDN `<link>`, the markup, and the CDN
-`<script>`, so the page needs nothing else. 17.8k chars, well under Webflow's
-50k embed limit.
+**Native elements, via the Webflow MCP.** Live on
+`siegcourse.webflow.io/navbar-native`, built 2026-08-25. Webflow owns the
+structure now — edit it in the Designer, not here. `nav.html` was the one-time
+source and is not pushed into Webflow again.
 
-Live and verified on `siegcourse.webflow.io/testing` — byte-faithful markup,
-`structure: OK` from `webflow/verify-port.js`.
+The build order matters, because `data_whtml_builder` silently drops classes
+that do not already exist as Webflow styles:
+
+```
+create_style × 58   →   whtml_builder × 4 roots   →   HtmlEmbed × 18 SVGs
+```
+
+Verified on the published page: **zero diffs** against `nav.html` on every
+attribute and tag count, all 14 combo chains intact, and
+`css loaded: true | js booted: true | structure: OK`. Full log in NOTES.md § 12.
+
+**The Code Embed fallback** still runs on `siegcourse.webflow.io/testing` — one
+embed carrying the CDN `<link>`, the markup and the CDN `<script>` (the contents
+of `webflow/htmltoflow.html`, 17.8k chars, under Webflow's 50k limit). Keep it.
 
 Two routes that do **not** work, both measured (NOTES § 10.6 and § 11):
 
@@ -125,11 +138,6 @@ Two routes that do **not** work, both measured (NOTES § 10.6 and § 11):
   own copy writes nothing to the OS pasteboard; element paste goes through an
   in-memory store holding a 3.8 MB state snapshot. `webflow-paste-extension/`
   cannot work; it is kept only as a record.
-
-One trap worth knowing if you touch `applyHeight()`: the element that carries the animated height
-**changes with the breakpoint** — `.nv-panels` on desktop, `.nv-body` on tablet and mobile. Whichever
-one is not in use must have its inline `height` cleared, or it walks across the breakpoint and
-overrides the stylesheet. See NOTES.md § 8.
 
 See **NOTES.md** for the Figma source values, the porting map, the mobile-scroll root cause, and the
 full verification log.

@@ -735,4 +735,155 @@ comes from `nav.html` too, so all three layers have a single source. Editing
 means: edit `nav.html`, `python3 tools/regen.py`, tag, then repaste the embed.
 
 If native elements are ever genuinely required, neither converter nor clipboard
-will get you there — it would have to be built by hand in the Designer.
+will get you there. Nor, it turns out, does it have to be done by hand — the
+**Webflow MCP** builds them directly. See § 12.
+
+
+---
+
+# 12. v1.1.0 — native Webflow elements, built through the MCP
+
+Done 2026-08-25, live on `siegcourse.webflow.io/navbar-native`. The Testing page
+and its Code Embed are untouched and remain the fallback.
+
+§ 11.5 said native elements would have to be built by hand. That is wrong: the
+Webflow MCP's `data_whtml_builder` takes HTML directly and produces real
+Designer elements. It is the third route tried and the first that gives Webflow
+ownership of the structure.
+
+## 12.1 The one thing that decides the whole route
+
+`data_whtml_builder` **drops every class it does not already recognise.** A
+first probe carrying `class="nv-btn nv-btn--ghost nv-login"` came back with the
+tree, the tags and every `data-*` attribute intact — and `styleNames` empty.
+
+Create the styles first and the same call returns:
+
+```
+styleNames: ["nv-btn", "nv-btn--ghost", "nv-login"]
+```
+
+Full combo chain, in order. So the sequence is **styles, then markup** — never
+the other way round. `data_style_tool > create_style` accepts an empty
+`properties: []`, which is exactly what is wanted here: the Style panel gets a
+real class, and every declaration still comes from `nav.css` on the CDN.
+
+58 styles: 43 base + 15 combos. The three-deep chain works —
+`nv-login` with `parent_style_names: ["nv-btn", "nv-btn--ghost"]` yields
+selector `.nv-btn.nv-btn--ghost.nv-login`.
+
+Combo classes are therefore **back** in `nav.html` as of v1.1.0. The
+`data-nav-variant` flattening of § 10 existed only to survive htmltoflow, and
+htmltoflow is not in the pipeline any more.
+
+## 12.2 What the builder preserves, and the two things it does not
+
+Preserved with no special handling: `data-nav-el` / `data-nav-panel` /
+`data-nav-icon`, every `aria-*`, `id`, and the tag map —
+`header`/`section`/`ul`/`li`/`h2`/`p` all land as the right Webflow type, and
+`<span>` stays a real Span rather than collapsing to a div as it did in § 9.3.
+
+Two things needed work:
+
+**1. SVGs become live DOM nodes, not embeds.** The builder turns `<svg>` into
+`type:"DOM" tag:"svg"` with `path` children. That renders, but it puts 18 icons
+beyond hand-editing in the Designer. Instead each `<svg>` was stripped out and
+its parent tagged `data-svg-slot="N"`; after insertion the 18 slots were located
+by that attribute, given an `HtmlEmbed` child, and the markup written to the
+embed's `code` setting. The markers were then removed.
+
+Take the SVG source **verbatim from `nav.html`**, not from a parsed tree —
+Python's `HTMLParser` lowercases `viewBox` to `viewbox`. Browsers repair that
+via the HTML5 SVG attribute-case table, so it renders either way, but there is
+no reason to ship it broken.
+
+**2. `hidden` does not survive publish.** The Designer stores it (`hidden: ""`)
+and then emits nothing. Harmless — `nav.js` hides every panel at boot and
+`.nv-panels{height:0;overflow:hidden}` clips them before that, so there is no
+flash — but the published markup no longer matched the source. Setting
+`hidden="hidden"` (a valid boolean-attribute form) publishes correctly.
+
+## 12.3 Buttons
+
+All 7 `<button>` became `<a href="#">`, as § 9.3 planned and § 9.4 measured.
+`nav.js` already calls `preventDefault()` on the toggle and on every panel head,
+and its close-on-link-click rule already excludes heads. `location.hash` stays
+empty at all three breakpoints.
+
+## 12.4 Verified — published HTML vs `nav.html`
+
+Counted against the comment-stripped source, so the header comment's own
+mentions of `data-nav-el` etc. do not inflate the totals:
+
+| | source | published |
+|---|---|---|
+| `data-nav-el` | 31 | **31** |
+| `data-nav-panel` | 12 | **12** |
+| `data-nav-icon` | 7 | **7** |
+| `aria-expanded` / `aria-controls` | 7 / 7 | **7 / 7** |
+| `aria-hidden` / `aria-label` / `aria-disabled` | 29 / 3 / 1 | **29 / 3 / 1** |
+| `id="nv-*"` | 9 | **9** |
+| `hidden` | 7 | **7** |
+| `<svg>` / `<path>` / `<line>` | 18 / 20 / 3 | **18 / 20 / 3** |
+| `<ul>` / `<li>` / `<h2>` / `<section>` / `<header>` | 1/7/3/4/1 | **1/7/3/4/1** |
+| `<button>` | 7 | **0** — all `<a href="#">`, by design |
+| `nv-` class usages | 150 | **150** |
+| combo-class elements | 14 | **14** |
+
+**Zero diffs.** All 14 combo chains present, each modifier alongside its base.
+18 `.w-embed` wrappers, `display:contents` doing its job.
+
+`webflow/verify-port.js` on the published page:
+
+```
+css loaded: true | js booted: true | structure: OK
+```
+
+## 12.5 Verified — behaviour
+
+Desktop measured directly; tablet and mobile in same-origin iframes, because
+`mode()` reads `window.innerWidth` and the media queries apply per frame.
+
+| | § 9.4 | this build |
+|---|---|---|
+| desktop bar / panel top / panel height | 74 / 94 / 508 | **74 / 94 / 508** |
+| tablet rail width / rail drift | 193 / 0 | **193 / 0** |
+| tablet bar height / panel height | — | 80 / 542 — identical to `/testing` |
+| mobile drill: drawer stays open, toggle | open / back | **open / back** |
+| `location.hash` | empty | **empty** |
+
+Also checked live: logo SVG measures 34px inside its `.w-embed`; exactly one
+logo visible at every width; exactly one hamburger icon at a time
+(menu → close → back through the mobile drill); Partners `thirds` panel lays out
+as three real columns; the disabled card and its muted tile render greyed
+(`rgba(0,0,0,.27)` on a `rgba(0,0,0,.06)` tile against `#f0ebff` normal);
+Escape closes and clears the scrim.
+
+The empty purple card-icon tiles are **expected** — `data-nav-icon` still marks
+them for the pass-2 SVG swap.
+
+## 12.6 Order of operations
+
+```
+create_page (duplicateOf: Testing)      → new page, carries the old embed
+remove_element                          → delete that embed
+create_style × 58                       → 43 base + 15 combo, all empty
+whtml_builder × 4                       → the 4 roots, SVGs stripped to slots
+element_builder × 18                    → an HtmlEmbed per slot
+set_settings × 18                       → the SVG markup, verbatim
+remove_attribute × 18                   → drop the data-svg-slot markers
+set_attributes × 7                      → hidden="hidden" on 6 panels + scrim
+set_page_freeform_code × 2              → CDN <link> in head, <script> in footer
+publish_site                            → publishToWebflowSubdomain, customDomains: []
+```
+
+Publishing with an empty `customDomains` array leaves the production domains
+alone — `academy.siegpath.com` and `course.siegpath.com` both still report
+`lastPublished: 2025-11-06`.
+
+## 12.7 What this buys
+
+Webflow now owns the structure. The Style panel lists all 58 classes, every
+element is selectable in the Navigator, and the markup is edited in the Designer
+from here on — `nav.html` was the one-time source and is not regenerated into
+Webflow again. CSS and JS stay in this repo and ride the CDN, unchanged.

@@ -17,6 +17,7 @@ const btnArm = $('arm');
 const btnSynth = $('synth');
 const btnDisarm = $('disarm');
 const btnDiag = $('diag');
+const btnFind = $('find');
 
 let pollTimer = null;
 
@@ -231,6 +232,78 @@ btnDiag.addEventListener('click', async () => {
     log(e.message);
   }
 })();
+
+/* ---------- where does Webflow actually keep a copied element? ----------
+   If its clipboard is an internal store rather than the OS one, the payload has
+   to be sitting somewhere reachable: localStorage, sessionStorage, IndexedDB,
+   or a global on window. Copy an element in the Designer, then run this. */
+btnFind.addEventListener('click', async () => {
+  try {
+    const tab = await webflowTab();
+    log('Scanning all frames for a stored payload…\n(copy an element in the Designer first)');
+    const out = await runInAllFrames(tab.id, {
+      func: async () => {
+        const NEEDLES = ['XscpData', 'zz-base', 'zz-combo', 'xscp'];
+        const hits = [];
+        const looksRight = (s) =>
+          typeof s === 'string' && s.length > 40 &&
+          NEEDLES.some((n) => s.toLowerCase().includes(n.toLowerCase()));
+
+        for (const [label, store] of [['localStorage', localStorage], ['sessionStorage', sessionStorage]]) {
+          try {
+            for (let i = 0; i < store.length; i++) {
+              const k = store.key(i);
+              const v = store.getItem(k);
+              if (looksRight(v)) hits.push({ where: label, key: k, len: v.length, head: v.slice(0, 120) });
+            }
+          } catch (e) { hits.push({ where: label, error: String(e) }); }
+        }
+
+        try {
+          for (const k of Object.keys(window)) {
+            if (!/clip|paste|copy|xscp/i.test(k)) continue;
+            let v = null;
+            try { v = window[k]; } catch (e) { continue; }
+            const s = typeof v === 'string' ? v : null;
+            hits.push({ where: 'window', key: k, type: typeof v, len: s ? s.length : null,
+                        head: s ? s.slice(0, 120) : null });
+          }
+        } catch (e) { hits.push({ where: 'window', error: String(e) }); }
+
+        let dbs = [];
+        try {
+          if (indexedDB.databases) dbs = (await indexedDB.databases()).map((d) => d.name + ' v' + d.version);
+        } catch (e) { dbs = ['(enumeration blocked)']; }
+
+        return {
+          url: location.href.slice(0, 70),
+          lsKeys: (() => { try { return localStorage.length; } catch (e) { return -1; } })(),
+          ssKeys: (() => { try { return sessionStorage.length; } catch (e) { return -1; } })(),
+          idb: dbs,
+          hits
+        };
+      }
+    });
+
+    let any = 0;
+    for (const r of out) {
+      const f = r.result;
+      if (!f) continue;
+      append('\n[' + r.frameId + '] ' + f.url +
+             '\n   localStorage ' + f.lsKeys + ' keys · sessionStorage ' + f.ssKeys + ' keys' +
+             '\n   indexedDB: ' + (f.idb.length ? f.idb.join(', ') : 'none'));
+      for (const h of f.hits) {
+        any++;
+        append('   ★ ' + h.where + (h.key ? ' [' + h.key + ']' : '') +
+               (h.len != null ? ' len=' + h.len : '') +
+               (h.error ? ' ERROR ' + h.error : '') +
+               (h.head ? '\n     ' + h.head : ''));
+      }
+    }
+    if (!any) append('\n→ No stored payload found. Webflow is not keeping it anywhere reachable.');
+    elLog.className = any ? 'ok' : 'warn';
+  } catch (e) { log('❌ ' + e.message, 'err'); }
+});
 
 btnDisarm.addEventListener('click', async () => {
   clearInterval(pollTimer);

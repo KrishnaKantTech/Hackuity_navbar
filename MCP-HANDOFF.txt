@@ -1,0 +1,47 @@
+Build the Hackuity navbar as native Webflow elements using the Webflow MCP.
+
+Repo: /Users/Shared/Data House/My Work/Clients Projects/hackuity/Hackuity_navbar
+Read NOTES.md sections 9, 10 and 11 plus README.md before doing anything. They
+record two routes that are already proven dead - the htmltoflow app and the
+XscpData clipboard paste - so do not retry either one.
+
+SOURCE
+nav.html at tag v1.1.0 is a ONE-TIME source. After this build Webflow owns the
+structure and I edit it by hand in the Designer. nav.html is 31 data-nav-el,
+12 data-nav-panel, 7 data-nav-icon, 14 elements carrying combo classes,
+18 inline SVGs and 7 buttons.
+
+TARGET
+Site: siegcourse
+Designer: https://siegcourse.design.webflow.com/?locale=en&pageId=6a8d5e70005131c1fb581c95
+Build on a DUPLICATE of the "Testing" page. Do not touch the Testing page
+itself - its single Code Embed is the working fallback and must stay live.
+
+RULES
+- CSS and JS stay on the CDN and are never pasted into Webflow. Link both in
+  the new page's custom code:
+    https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.css
+    https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.0/nav.js
+- Real Webflow classes through the Style panel, combo classes included, e.g.
+  nv-btn + nv-btn--ghost + nv-login on one element. Do NOT write the class as a
+  custom attribute.
+- Use div and link elements instead of <button>. Already proven equivalent -
+  NOTES section 9.4.
+- Keep all 18 SVGs as inline code inside HTML embeds. 16 of them use
+  stroke="currentColor" and would lose their hover and active colour as <img>,
+  because nav.css colours them through .nv-link:hover and
+  .nv-item.nv-is-active .nv-link. I will swap any of them manually later.
+- data-nav-el, data-nav-panel and data-nav-icon must survive exactly. nav.js
+  finds every element through them and reads no classes at all.
+
+VERIFY WHEN DONE
+1. Publish to the siegcourse.webflow.io staging domain ONLY. Never publish
+   course.siegpath.com or academy.siegpath.com.
+2. Diff the published HTML against nav.html - attribute counts and tag counts.
+3. Paste webflow/verify-port.js into the console on the published page.
+   Expect: css loaded: true | js booted: true | structure: OK
+
+NOTE
+verify-port.js checks v1.1.0 combo classes. Running it against the OLD fallback
+page at siegcourse.webflow.io/testing will report failures - that page is the
+v1.0.1 build and uses data-nav-variant instead. That is expected, not a bug.

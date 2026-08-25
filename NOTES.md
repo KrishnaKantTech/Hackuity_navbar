@@ -638,3 +638,101 @@ nav.html ─┬─→ embed.html
 
 All four payloads now report 43 styles, **0 combos**, 31 `data-nav-el` and
 14 `data-nav-variant`.
+
+---
+
+# 11. How the navbar actually got into Webflow
+
+Done 2026-08-25, live on `siegcourse.webflow.io/testing`. Both converter routes
+are dead; the thing that works is a single Code Embed.
+
+## 11.1 The paste API is gone
+
+§ 9 assumed the `@webflow/XscpData` clipboard payload would paste into the
+Designer. Driving the Designer directly and instrumenting it proved otherwise:
+
+- Patching `DataTransfer.prototype.getData` and pressing a real ⌘V, Webflow
+  **does** ask for `text/plain` and **does** receive the payload — then silently
+  discards it. No console error, nothing on canvas.
+- The same happens with `webflow/control-sample.json`, three nodes copied out of
+  Webflow itself. So the payload was never the problem.
+- Webflow's own ⌘C writes **nothing** to the OS pasteboard (`pbpaste` → 0 bytes).
+  Element copy/paste goes through an in-memory `ClipboardStore`, which after a
+  copy holds `{clippedElement, ix2State, designerState, pageState, …}` — and
+  `designerState` alone is **3.8 MB** of live state. It is not a construction
+  target, and nothing is written to localStorage, sessionStorage, or IndexedDB,
+  so it does not even survive a reload.
+
+`webflow-paste-extension/` cannot work, and neither can any variation on it.
+The XscpData payloads are kept only as a structural record.
+
+## 11.2 `wf.addToCanvas` — a good probe, not a route
+
+The Designer exposes `window.wf.addToCanvas(wfdl)` and
+`window.wf.exportTrainingData()`. WFDL is Webflow's own printed element
+language, and a round trip works:
+
+```
+<Basic::Block "uuid"> { text: false, tag: >div, styleBlockIds: [ ],
+  xattr: [ { name: "class", value: "nv-logo", }, ], … } </Basic::Block>
+```
+
+`wf.validateWFDL()` gives a fast validate loop, and a generated tree for all
+194 nodes validated clean. But `addToCanvas` assigns
+`window._webflow.state.DesignerStore` directly instead of dispatching, so
+nothing is persisted — **everything vanishes on reload.** Display only.
+
+One genuinely useful finding survives from it: **an `xattr` named `class`
+renders as a real `class` attribute**, with no Webflow style block behind it.
+So the Style panel never has to know about `nv-*` at all.
+
+## 11.3 What shipped: one Code Embed
+
+Add panel → double-click **Code Embed** → paste `webflow/htmltoflow.html`
+(17,863 chars, well under Webflow's 50,000 limit) into the code editor → Save &
+Close. The OS clipboard works fine here — it was only Webflow's *element* paste
+that ignored it.
+
+The embed carries the CDN `<link>`, the markup, and the CDN `<script>`, so the
+page needs nothing else.
+
+## 11.4 Verified on the published page
+
+`nav.html` vs the published HTML:
+
+| | source | published |
+|---|---|---|
+| `data-nav-el` | 31 | **31** |
+| `data-nav-panel` | 12 | **12** |
+| `data-nav-variant` | 14 | **14** |
+| `data-nav-icon` | 7 | **7** |
+| `aria-expanded` / `aria-controls` | 7 / 7 | **7 / 7** |
+| `<button>` | 7 | **7** |
+| `<svg>` | 18 | **18** |
+| combo classes | 0 | **0** |
+
+Byte-faithful. Compare with § 10.6, where the same markup through htmltoflow
+lost all 7 buttons, all 64 `data-nav-*`, and 15 of 18 SVGs.
+
+`webflow/verify-port.js` on the live page:
+
+```
+css loaded: true | js booted: true | structure: OK
+```
+
+Behaviour checked live: mega menu opens on hover with full content, the
+Partners `thirds` panel lays out as a real 3-column grid, the disabled card and
+its muted icon tile render greyed, Escape closes and clears the scrim, and
+exactly **one** logo is visible — the three symptoms from the htmltoflow import
+are all gone.
+
+## 11.5 What this costs
+
+The navbar is one embed, not native Webflow elements: it cannot be restyled in
+the Designer, and the Style panel stays empty. Given that the architecture
+already puts CSS and JS in this repo, that is close to free — the structure now
+comes from `nav.html` too, so all three layers have a single source. Editing
+means: edit `nav.html`, `python3 tools/regen.py`, tag, then repaste the embed.
+
+If native elements are ever genuinely required, neither converter nor clipboard
+will get you there — it would have to be built by hand in the Designer.

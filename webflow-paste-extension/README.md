@@ -1,3 +1,9 @@
+> **DEAD END — kept as a record.** The Designer reads the payload and
+> silently discards it, including a control payload copied out of Webflow
+> itself. Element paste goes through an in-memory `ClipboardStore` holding a
+> 3.8 MB state snapshot, not the clipboard text. The navbar ships as a single
+> Code Embed instead — see the main README and NOTES § 11.
+
 # Hackuity Navbar → Webflow
 
 A one-purpose Chrome extension: hands `webflow/navbar.webflow.json` to the

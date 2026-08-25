@@ -107,13 +107,24 @@ python3 tools/regen.py
 
 ## Getting it into Webflow
 
-The Designer does **not** read the OS clipboard — its own copy leaves the
-pasteboard empty, and pasting a payload from another tab is rejected with
-"The clipboard is empty." Use `webflow-paste-extension/` (load unpacked, arm,
-then ⌘V on the canvas); its README has the detail.
+**One Code Embed.** In the Designer: Add panel → double-click **Code Embed** →
+paste the contents of `webflow/htmltoflow.html` into the code editor → Save &
+Close → Publish. The embed carries the CDN `<link>`, the markup, and the CDN
+`<script>`, so the page needs nothing else. 17.8k chars, well under Webflow's
+50k embed limit.
 
-The **htmltoflow** app is not an option for this component: it deletes every
-`<button>`, every `data-*` attribute, and 15 of the 18 `<svg>`s. See NOTES § 10.6.
+Live and verified on `siegcourse.webflow.io/testing` — byte-faithful markup,
+`structure: OK` from `webflow/verify-port.js`.
+
+Two routes that do **not** work, both measured (NOTES § 10.6 and § 11):
+
+- **htmltoflow** deletes every `<button>`, every `data-*` attribute, 15 of the
+  18 `<svg>`s and 8 of 9 `id`s.
+- **The XscpData clipboard payload** is read by the Designer and silently
+  discarded — including a control payload copied out of Webflow itself. Webflow's
+  own copy writes nothing to the OS pasteboard; element paste goes through an
+  in-memory store holding a 3.8 MB state snapshot. `webflow-paste-extension/`
+  cannot work; it is kept only as a record.
 
 One trap worth knowing if you touch `applyHeight()`: the element that carries the animated height
 **changes with the breakpoint** — `.nv-panels` on desktop, `.nv-body` on tablet and mobile. Whichever

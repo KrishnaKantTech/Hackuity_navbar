@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Hackuity Navbar → Webflow",
+  "version": "1.0.0",
+  "description": "Hands the Hackuity navbar's Webflow clipboard payload directly to the Designer, from inside the page.",
+  "permissions": ["scripting", "activeTab"],
+  "host_permissions": ["https://webflow.com/*", "https://*.webflow.com/*"],
+  "action": {
+    "default_title": "Hackuity Navbar → Webflow",
+    "default_popup": "popup.html"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["payload/*.json"],
+      "matches": ["https://webflow.com/*", "https://*.webflow.com/*"]
+    }
+  ]
+}

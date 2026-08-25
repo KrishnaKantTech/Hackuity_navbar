@@ -25,11 +25,19 @@ function append(msg) {
 }
 
 /* ---------- find the Webflow Designer tab ---------- */
+/* Designer URLs carry more than one subdomain label — the live one looks like
+   https://kcm-en.design.webflow.com/?pageId=… — so every label has to be
+   optional and repeatable, not just one. */
+const WEBFLOW_URL = /^https:\/\/([a-z0-9-]+\.)*webflow\.com(\/|$)/i;
+
 async function webflowTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) throw new Error('No active tab.');
-  if (!/^https:\/\/([a-z0-9-]+\.)?webflow\.com\//i.test(tab.url || '')) {
-    throw new Error('Not a Webflow tab.\nOpen the Designer, then click Arm.');
+  if (!WEBFLOW_URL.test(tab.url || '')) {
+    let host = '(unknown)';
+    try { host = new URL(tab.url).host; } catch (e) {}
+    throw new Error('Not a Webflow tab — host is:\n' + host +
+                    '\n\nOpen the Designer, then click Arm.');
   }
   return tab;
 }

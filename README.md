@@ -25,17 +25,19 @@ Open `embed.html` in a browser to see it. Resize past 1620 / 768 / 480 to cross 
 
 ## Install in Webflow
 
-Page Settings → Custom Code → **Head** (or Project Settings, for a site-wide navbar):
+The navbar carries its own loaders, so there is nothing to add to Custom Code —
+copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
+embeds bracket the markup:
 
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.css">
-```
-
-…and **Footer**:
-
-```html
+…the navbar…
 <script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.js"></script>
 ```
+
+**Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
+instances fighting over the same inline height, which silently kills the
+mega-menu height animation — NOTES.md § 12.9.
 
 Pin a **tag**, never `@main` — jsDelivr caches aggressively and an untagged URL would let any push
 edit the live site. To release: commit, `git tag v1.1.2`, `git push --tags`, bump the URLs.
@@ -120,6 +122,12 @@ that do not already exist as Webflow styles:
 ```
 create_style × 58   →   whtml_builder × 4 roots   →   HtmlEmbed × 18 SVGs
 ```
+
+Everything then went into one unstyled wrapper div — the four roots plus a CDN
+`<link>` and `<script>` — so the whole navbar copies to another page as a single
+element. The wrapper must stay classless and static: give it a `transform` or
+`position:relative` and it becomes the containing block for the four
+fixed/absolute roots. See NOTES.md § 12.8.
 
 Verified on the published page: **zero diffs** against `nav.html` on every
 attribute and tag count, all 14 combo chains intact, and

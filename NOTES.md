@@ -873,7 +873,8 @@ element_builder × 18                    → an HtmlEmbed per slot
 set_settings × 18                       → the SVG markup, verbatim
 remove_attribute × 18                   → drop the data-svg-slot markers
 set_attributes × 7                      → hidden="hidden" on 6 panels + scrim
-set_page_freeform_code × 2              → CDN <link> in head, <script> in footer
+element_builder + move_element          → one wrapper div, everything inside (§ 12.8)
+element_builder × 2 + set_settings × 2  → the CDN <link> and <script>, inside it
 publish_site                            → publishToWebflowSubdomain, customDomains: []
 ```
 
@@ -887,3 +888,71 @@ Webflow now owns the structure. The Style panel lists all 58 classes, every
 element is selectable in the Navigator, and the markup is edited in the Designer
 from here on — `nav.html` was the one-time source and is not regenerated into
 Webflow again. CSS and JS stay in this repo and ride the CDN, unchanged.
+
+
+## 12.8 One wrapper, so the navbar travels
+
+The four roots started as four siblings on `<body>`, with the CDN `<link>` and
+`<script>` in the page's custom code. That works, but copying the navbar to
+another page means copying four elements **and** remembering the custom code.
+
+They are now one unit:
+
+```
+Body
+└── div  "Hackuity Navbar"          ← copy this, get everything
+    ├── HtmlEmbed   <link  … nav.css>
+    ├── a.nv-skip-link
+    ├── a.nv-logo.nv-logo--standalone
+    ├── header.nv-wrap
+    ├── div.nv-scrim
+    └── HtmlEmbed   <script defer … nav.js>
+```
+
+Page-level custom code is now **empty** — the loaders moved into the wrapper.
+Exactly one of the two may exist. Two copies of `nav.js` is not a harmless
+duplicate: see § 12.9.
+
+The wrapper carries **no class and no styles**, and that is load-bearing:
+
+- `.nv-wrap` and `.nv-scrim` are `position:fixed`; `.nv-skip-link` and (on
+  mobile) `.nv-logo--standalone` are `position:absolute` against the initial
+  containing block. A wrapper with `transform`, `filter`, `will-change`,
+  `contain` or `position:relative` would become their containing block and
+  break all four. A plain static div does not.
+- It also creates no stacking context, so the `z-index:100 / 99 / 98` ordering
+  between bar, scrim and standalone logo survives untouched.
+
+Verified after the move: `cssLoaded: true`, `jsBooted: true`, `structure: OK`,
+one non-script child on `<body>`, wrapper `position: static` with 6 children,
+and the published page still reports 31 `data-nav-el`, 12 `data-nav-panel`,
+7 `data-nav-icon`, 18 `<svg>` and 150 `nv-` class usages.
+
+A `<link rel="stylesheet">` inside `<body>` is valid — the spec marks it
+body-ok — and it still lands after Webflow's own stylesheet, which is the one
+ordering rule that matters (README, "What the port must preserve").
+
+## 12.9 The duplicate-loader trap
+
+Symptom: mega-menu heights snap instead of animating, on hover and on switching
+between panels of different heights.
+
+Cause: the page was loading **nav.js twice** — once from page custom code and
+once from a pair of loader embeds. Two instances both bind to the same DOM and
+fight over the same inline `height`:
+
+- each instance's `applyHeight()` overwrites the value the other just set;
+- each instance's `naturalHeight()` sets `transition:none` on the sizer to take
+  a measurement, which cancels the other's in-flight transition.
+
+Nothing errors. The structure is perfect, `verify-port.js` still says
+`structure: OK`, and the only visible symptom is that the height animation is
+gone.
+
+`nav.js` has no re-entry guard, so this is worth checking first whenever the
+animation misbehaves:
+
+```js
+document.querySelectorAll('script[src*="nav.js"]').length   // must be 1
+document.querySelectorAll('link[href*="nav.css"]').length   // must be 1
+```

@@ -1,8 +1,12 @@
 /* ============================================================================
    Popup controller.
-   Loads a bundled payload, validates it, injects inject.js into the MAIN world
-   of the active Webflow tab, arms it, and then polls for what actually got
-   read. Nothing is armed without an explicit click here.
+
+   Injects into EVERY frame of the Webflow tab, not just the top one. This
+   matters: the Designer canvas is an iframe, and each frame is its own JS realm
+   with its own DataTransfer.prototype and its own navigator.clipboard. Patching
+   only the top frame leaves the canvas — where the paste actually lands —
+   completely untouched, which is why the first build never intercepted
+   anything.
    ========================================================================= */
 'use strict';
 
@@ -12,37 +16,30 @@ const elWhich = $('which');
 const btnArm = $('arm');
 const btnSynth = $('synth');
 const btnDisarm = $('disarm');
+const btnDiag = $('diag');
 
 let pollTimer = null;
 
-function log(msg, cls) {
-  elLog.className = cls || '';
-  elLog.textContent = msg;
-}
-function append(msg) {
-  elLog.textContent += '\n' + msg;
-  elLog.scrollTop = elLog.scrollHeight;
-}
+function log(msg, cls) { elLog.className = cls || ''; elLog.textContent = msg; }
+function append(msg) { elLog.textContent += '\n' + msg; elLog.scrollTop = elLog.scrollHeight; }
 
-/* ---------- find the Webflow Designer tab ---------- */
 /* Designer URLs carry more than one subdomain label — the live one looks like
    https://kcm-en.design.webflow.com/?pageId=… — so every label has to be
    optional and repeatable, not just one. */
-const WEBFLOW_URL = /^https:\/\/([a-z0-9-]+\.)*webflow\.com(\/|$)/i;
+const WEBFLOW_URL = /^https:\/\/([a-z0-9-]+\.)*webflow\.(com|io)(\/|$)/i;
 
 async function webflowTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) throw new Error('No active tab.');
   if (!WEBFLOW_URL.test(tab.url || '')) {
-    let host = '(unknown)';
+    let host = '(unparseable)';
     try { host = new URL(tab.url).host; } catch (e) {}
-    throw new Error('Not a Webflow tab — host is:\n' + host +
-                    '\n\nOpen the Designer, then click Arm.');
+    throw new Error('Not a Webflow tab — host is:\n' + host + '\n\nOpen the Designer, then Arm.');
   }
   return tab;
 }
 
-/* ---------- load + validate the payload ---------- */
+/* ---------- payload ---------- */
 async function loadPayload(name) {
   const res = await fetch(chrome.runtime.getURL('payload/' + name));
   if (!res.ok) throw new Error('Payload missing: ' + name);
@@ -57,8 +54,6 @@ async function loadPayload(name) {
   if (!p || !Array.isArray(p.nodes) || !Array.isArray(p.styles)) {
     throw new Error('Payload is missing nodes/styles.');
   }
-
-  /* integrity: every child and class reference must resolve */
   const ids = new Set(p.nodes.map((n) => n._id));
   const styleIds = new Set(p.styles.map((s) => s._id));
   const referenced = new Set();
@@ -75,55 +70,55 @@ async function loadPayload(name) {
   return { text, nodes: p.nodes.length, styles: p.styles.length, roots };
 }
 
-/* ---------- inject + arm ---------- */
-async function inject(tabId, payload) {
-  await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
-    world: 'MAIN',
-    files: ['inject.js']
-  });
-  const [{ result }] = await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
-    world: 'MAIN',
-    func: (json) => (typeof NV_ARM === 'function'
-      ? NV_ARM(json, { timeoutMs: 90000 })
-      : { ok: false, error: 'NV_ARM missing' }),
-    args: [payload]
-  });
-  return result;
+/* ---------- frame-wide injection ---------- */
+async function runInAllFrames(tabId, spec) {
+  const results = await chrome.scripting.executeScript(
+    Object.assign({ target: { tabId, allFrames: true }, world: 'MAIN' }, spec)
+  );
+  return results || [];
 }
 
-async function readState(tabId) {
-  const [{ result }] = await chrome.scripting.executeScript({
-    target: { tabId, allFrames: false },
+async function frameReport(tabId) {
+  const frames = await chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
     world: 'MAIN',
-    func: () => (window.__nvState ? JSON.parse(JSON.stringify(window.__nvState)) : null)
+    func: () => ({
+      url: (location.href || '').slice(0, 90),
+      top: window === window.top,
+      armed: !!(window.__nvState && window.__nvState.armed),
+      served: (window.__nvState && window.__nvState.served) || [],
+      hasArm: typeof NV_ARM === 'function',
+      err: (window.__nvState && window.__nvState.lastError) || null
+    })
   });
-  return result;
+  return frames.map((f) => Object.assign({ frameId: f.frameId }, f.result || {}));
 }
 
+/* ---------- polling ---------- */
 function startPolling(tabId) {
   clearInterval(pollTimer);
   let ticks = 0;
   pollTimer = setInterval(async () => {
     ticks++;
-    let s = null;
-    try { s = await readState(tabId); } catch (e) { /* tab navigated away */ }
-    if (!s) return;
-    if (s.served && s.served.length) {
+    let frames = [];
+    try { frames = await frameReport(tabId); } catch (e) { return; }
+    const hit = frames.filter((f) => f.served && f.served.length);
+    if (hit.length) {
       clearInterval(pollTimer);
-      log('✅ Webflow read the payload\n   via ' + s.served.join(', ') +
-          '\n\nCheck the Navigator — the navbar should be there.', 'ok');
+      log('✅ Webflow read the payload\n' +
+        hit.map((f) => '   frame ' + f.frameId + (f.top ? ' (top)' : '') + ' → ' + f.served.join(', ')).join('\n') +
+        '\n\nCheck the Navigator.', 'ok');
       btnSynth.disabled = true;
-    } else if (!s.armed) {
+      return;
+    }
+    if (!frames.some((f) => f.armed)) {
       clearInterval(pollTimer);
-      log('⚠️ Disarmed (' + s.disarmedBy + ') before anything was read.\n' +
-          'Arm again and press Cmd+V with the canvas focused.', 'warn');
+      log('⚠️ All frames disarmed before anything was read.\nArm again, click the canvas, then Cmd+V.', 'warn');
       btnSynth.disabled = true;
       btnDisarm.disabled = true;
-    } else if (ticks % 10 === 0) {
-      append('… still armed, waiting for a paste');
+      return;
     }
+    if (ticks % 8 === 0) append('… armed in ' + frames.filter((f) => f.armed).length + ' frame(s), waiting');
   }, 1000);
 }
 
@@ -135,13 +130,25 @@ btnArm.addEventListener('click', async () => {
     log('Loading ' + elWhich.value + ' …');
     const pl = await loadPayload(elWhich.value);
     append('✓ valid · ' + pl.text.length.toLocaleString() + ' chars · ' +
-           pl.nodes + ' nodes · ' + pl.styles + ' classes · ' + pl.roots + ' root(s)');
+      pl.nodes + ' nodes · ' + pl.styles + ' classes · ' + pl.roots + ' root(s)');
 
-    const armed = await inject(tab.id, pl.text);
-    if (!armed || !armed.ok) throw new Error('Arm failed: ' + JSON.stringify(armed));
+    await runInAllFrames(tab.id, { files: ['inject.js'] });
+    const armed = await runInAllFrames(tab.id, {
+      func: (json) => (typeof NV_ARM === 'function'
+        ? NV_ARM(json, { timeoutMs: 120000 })
+        : { ok: false, error: 'NV_ARM missing' }),
+      args: [pl.text]
+    });
 
-    append('✓ armed in the Webflow tab (90s)');
-    append('\n→ Click the canvas, then press Cmd+V');
+    const good = armed.filter((r) => r.result && r.result.ok);
+    if (!good.length) throw new Error('Armed 0 frames.\n' + JSON.stringify(armed.map((r) => r.result)));
+    append('✓ armed in ' + good.length + ' of ' + armed.length + ' frame(s), 120s window');
+
+    const frames = await frameReport(tab.id);
+    for (const f of frames) {
+      append('   [' + f.frameId + ']' + (f.top ? ' top ' : '     ') + (f.armed ? '✓ ' : '✗ ') + f.url);
+    }
+    append('\n→ Click the CANVAS, then Cmd+V');
     elLog.className = 'ok';
     btnSynth.disabled = false;
     btnDisarm.disabled = false;
@@ -156,33 +163,40 @@ btnArm.addEventListener('click', async () => {
 btnSynth.addEventListener('click', async () => {
   try {
     const tab = await webflowTab();
-    const [{ result }] = await chrome.scripting.executeScript({
-      target: { tabId: tab.id, allFrames: false },
-      world: 'MAIN',
-      func: () => (typeof window.__nvSynthetic === 'function'
-        ? window.__nvSynthetic()
-        : -1)
+    const out = await runInAllFrames(tab.id, {
+      func: () => (typeof window.__nvSynthetic === 'function' ? window.__nvSynthetic() : -1)
     });
-    if (result === -1) append('❌ not armed — press Arm first');
-    else append('→ fired synthetic paste at ' + result + ' target(s); check the Navigator');
-  } catch (e) {
-    append('❌ ' + e.message);
-  }
+    const fired = out.map((r) => r.result).filter((n) => n > 0);
+    append('→ synthetic paste fired in ' + fired.length + ' frame(s) at ' +
+      fired.reduce((a, b) => a + b, 0) + ' target(s)');
+  } catch (e) { append('❌ ' + e.message); }
+});
+
+btnDiag.addEventListener('click', async () => {
+  try {
+    const tab = await webflowTab();
+    const frames = await frameReport(tab.id);
+    log('Frames in this tab: ' + frames.length);
+    for (const f of frames) {
+      append('\n[' + f.frameId + ']' + (f.top ? ' TOP' : '') +
+        '\n   url    ' + f.url +
+        '\n   NV_ARM ' + (f.hasArm ? 'present' : 'not injected') +
+        '\n   armed  ' + f.armed +
+        '\n   served ' + JSON.stringify(f.served) +
+        (f.err ? '\n   error  ' + f.err : ''));
+    }
+  } catch (e) { log('❌ ' + e.message, 'err'); }
 });
 
 btnDisarm.addEventListener('click', async () => {
   clearInterval(pollTimer);
   try {
     const tab = await webflowTab();
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id, allFrames: false },
-      world: 'MAIN',
+    await runInAllFrames(tab.id, {
       func: () => (window.__nvDisarm ? window.__nvDisarm('popup') : null)
     });
-    log('Disarmed. Normal copy/paste restored.');
-  } catch (e) {
-    log('❌ ' + e.message, 'err');
-  }
+    log('Disarmed everywhere. Normal copy/paste restored.');
+  } catch (e) { log('❌ ' + e.message, 'err'); }
   btnSynth.disabled = true;
   btnDisarm.disabled = true;
 });

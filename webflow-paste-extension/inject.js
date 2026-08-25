@@ -32,11 +32,31 @@ function NV_ARM(payload, opts) {
   var state = window.__nvState = {
     armed: true,
     served: [],
+    calls: [],          /* full record: what was asked for, by whom, when */
     startedAt: Date.now(),
     lastError: null,
     disarmedBy: null,
     chars: payload.length
   };
+
+  /* Who is asking? Webflow's paste handler and an incidental getData from some
+     unrelated widget look identical unless we capture the caller. */
+  function caller() {
+    try {
+      var lines = (new Error().stack || '').split('\n').slice(2, 6);
+      return lines.map(function (l) { return l.trim().replace(/^at\s+/, ''); }).join(' | ');
+    } catch (e) { return '(no stack)'; }
+  }
+  function record(what, type, gave) {
+    state.calls.push({
+      at: Date.now() - state.startedAt,
+      what: what,
+      type: type,
+      gave: gave,
+      from: caller()
+    });
+    if (state.calls.length > 40) state.calls.shift();
+  }
 
   /* ---------- keep every original so disarm is exact ---------- */
   var oGetData   = DataTransfer.prototype.getData;
@@ -56,9 +76,17 @@ function NV_ARM(payload, opts) {
   DataTransfer.prototype.getData = function (type) {
     try {
       var t = String(type == null ? '' : type).toLowerCase();
-      if (state.armed && WANTED[t] === true) {
-        note('DataTransfer.getData("' + t + '")');
-        return payload;
+      if (state.armed) {
+        if (WANTED[t] === true) {
+          note('DataTransfer.getData("' + t + '")');
+          record('getData', t, 'payload');
+          return payload;
+        }
+        /* not ours — still log it, so we can see everything Webflow probes for
+           before it decides the clipboard is empty */
+        var passed = oGetData.apply(this, arguments);
+        record('getData', t, passed ? 'passthrough(' + passed.length + ')' : 'passthrough(empty)');
+        return passed;
       }
     } catch (e) { state.lastError = String(e); }
     return oGetData.apply(this, arguments);
@@ -77,6 +105,7 @@ function NV_ARM(payload, opts) {
           if (!state.armed) return real;
           var list = Array.prototype.slice.call(real || []);
           if (list.indexOf('text/plain') === -1) list.push('text/plain');
+          record('types', '-', JSON.stringify(list));
           return Object.freeze(list);
         }
       });

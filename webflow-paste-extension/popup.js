@@ -87,11 +87,32 @@ async function frameReport(tabId) {
       top: window === window.top,
       armed: !!(window.__nvState && window.__nvState.armed),
       served: (window.__nvState && window.__nvState.served) || [],
+      calls: (window.__nvState && window.__nvState.calls) || [],
       hasArm: typeof NV_ARM === 'function',
       err: (window.__nvState && window.__nvState.lastError) || null
     })
   });
   return frames.map((f) => Object.assign({ frameId: f.frameId }, f.result || {}));
+}
+
+/* The canvas iframes rebuild themselves, which wipes anything injected a moment
+   earlier. Inject and arm, then check, then repeat for the frames that came up
+   empty — a couple of passes is enough to catch a frame mid-rebuild. */
+async function armEverywhere(tabId, payload, passes = 3) {
+  let report = [];
+  for (let i = 0; i < passes; i++) {
+    await runInAllFrames(tabId, { files: ['inject.js'] });
+    await runInAllFrames(tabId, {
+      func: (json) => (typeof NV_ARM === 'function'
+        ? NV_ARM(json, { timeoutMs: 120000 })
+        : { ok: false, error: 'NV_ARM missing' }),
+      args: [payload]
+    });
+    report = await frameReport(tabId);
+    if (report.every((f) => f.armed)) break;
+    await new Promise((r) => setTimeout(r, 350));
+  }
+  return report;
 }
 
 /* ---------- polling ---------- */
@@ -132,19 +153,10 @@ btnArm.addEventListener('click', async () => {
     append('✓ valid · ' + pl.text.length.toLocaleString() + ' chars · ' +
       pl.nodes + ' nodes · ' + pl.styles + ' classes · ' + pl.roots + ' root(s)');
 
-    await runInAllFrames(tab.id, { files: ['inject.js'] });
-    const armed = await runInAllFrames(tab.id, {
-      func: (json) => (typeof NV_ARM === 'function'
-        ? NV_ARM(json, { timeoutMs: 120000 })
-        : { ok: false, error: 'NV_ARM missing' }),
-      args: [pl.text]
-    });
-
-    const good = armed.filter((r) => r.result && r.result.ok);
-    if (!good.length) throw new Error('Armed 0 frames.\n' + JSON.stringify(armed.map((r) => r.result)));
-    append('✓ armed in ' + good.length + ' of ' + armed.length + ' frame(s), 120s window');
-
-    const frames = await frameReport(tab.id);
+    const frames = await armEverywhere(tab.id, pl.text);
+    const good = frames.filter((f) => f.armed);
+    if (!good.length) throw new Error('Armed 0 frames — injection is being blocked.');
+    append('✓ armed in ' + good.length + ' of ' + frames.length + ' frame(s), 120s window');
     for (const f of frames) {
       append('   [' + f.frameId + ']' + (f.top ? ' top ' : '     ') + (f.armed ? '✓ ' : '✗ ') + f.url);
     }
@@ -184,6 +196,13 @@ btnDiag.addEventListener('click', async () => {
         '\n   armed  ' + f.armed +
         '\n   served ' + JSON.stringify(f.served) +
         (f.err ? '\n   error  ' + f.err : ''));
+      if (f.calls && f.calls.length) {
+        append('   calls  ' + f.calls.length);
+        for (const c of f.calls) {
+          append('     +' + c.at + 'ms  ' + c.what + '("' + c.type + '") → ' + c.gave +
+                 '\n        from ' + (c.from || '').slice(0, 150));
+        }
+      }
     }
   } catch (e) { log('❌ ' + e.message, 'err'); }
 });

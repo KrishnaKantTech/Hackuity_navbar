@@ -26,8 +26,8 @@
      data-nav-el="body"             the growing/drawer surface
      data-nav-el="panels"           the panel stack
      data-nav-el="panel"            one mega-menu   + data-nav-panel="<key>"
-     data-nav-el="menu"             the <ul>
-     data-nav-el="item"             one <li>        + data-nav-panel="<key>"
+     data-nav-el="menu"             the link list   (div, role="list")
+     data-nav-el="item"             one row         + data-nav-panel="<key>"
      data-nav-el="link"             the <button>/<a> inside an item
      data-nav-el="toggle"           the hamburger
      data-nav-el="toggle-label"     its text span

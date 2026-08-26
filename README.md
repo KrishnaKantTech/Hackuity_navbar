@@ -30,9 +30,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.0/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.0/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -72,8 +72,8 @@ data attributes, and those must survive the conversion:
 | `data-nav-el="body"` | the growing surface / mobile drawer |
 | `data-nav-el="panels"` | the panel stack |
 | `data-nav-el="panel"` + `data-nav-panel="<key>"` | one mega-menu |
-| `data-nav-el="menu"` | the `<ul>` |
-| `data-nav-el="item"` + `data-nav-panel="<key>"` | one `<li>` |
+| `data-nav-el="menu"` | the link list — a `div` with `role="list"` |
+| `data-nav-el="item"` + `data-nav-panel="<key>"` | one row — a `div` with `role="listitem"` |
 | `data-nav-el="link"` | the `<button>`/`<a>` inside an item |
 | `data-nav-el="toggle"` / `"toggle-label"` | the hamburger and its text |
 | `data-nav-el="scrim"` | the full-page dim layer |

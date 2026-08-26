@@ -956,3 +956,118 @@ animation misbehaves:
 document.querySelectorAll('script[src*="nav.js"]').length   // must be 1
 document.querySelectorAll('link[href*="nav.css"]').length   // must be 1
 ```
+
+
+---
+
+# 13 · The link list is divs now, not `ul`/`li` (v1.2.0)
+
+Done 2026-08-26 on the `testing-mcp` page (slug still `/navbar-native`).
+`.nv-menu` is a Webflow **Div Block** with `role="list"`; each `.nv-item` is a
+Div Block with `role="listitem"`. Zero `List` elements remain on the page.
+
+## 13.1 Why — the Slot rule, not taste
+
+The plan is a Slot inside `.nv-menu` and an `nv-item` **component** dropped into
+it, so items can be added without touching the tree. A Webflow `List` cannot
+host either:
+
+- a Slot is created with `data_element_builder type:"ComponentSlot"` and only
+  goes **inside a component definition**; and only component *instances* may
+  live in a slot — never a plain element;
+- `set_tag` on a `List` accepts **`ul|ol` only**. There is no List → Div
+  conversion, which is why the 7 items had to be rebuilt rather than retagged.
+
+Per-item `data-nav-panel` is not a blocker for the component step later:
+`set_settings` takes an `attributes` entry with `value_binding`, so a `string`
+prop can drive the attribute value per instance. Same for `aria-controls`.
+The label is a `textContent` prop.
+
+## 13.2 Nothing in the repo cared about the tags
+
+- `nav.js` resolves everything through `[data-nav-el]`. The `li` in
+  `items.forEach(function (li) …)` is a variable name, not a selector.
+- `nav.css` is class-only. `.nv-menu{margin:0;padding:0;list-style:none}`
+  existed to beat Webflow's `ul{padding-left:40px}` — a div never inherits that,
+  so the div is the safer element. The rule stays; `list-style` is inert on it.
+- `verify-port.js` counts by attribute (`menu:1, item:7`), so it is unaffected.
+
+`role="list"`/`"listitem"` are not decoration: `.nv-menu` is `display:flex`,
+which already strips list semantics in Safari/VoiceOver. The roles put them back,
+so the div build is *more* consistent for screen readers than the `ul` was.
+
+## 13.3 Order of operations
+
+```
+whtml_builder × 1        → the div menu, inserted `before` the old <ul>,
+                           12 SVGs stripped to data-svg-slot markers
+element_builder × 12     → an HtmlEmbed per slot
+set_settings × 12        → the SVG markup (chevron ×6, caret ×6)
+remove_attribute × 12    → drop the markers
+remove_element × 1       → the old <ul>
+publish_site             → publishToWebflowSubdomain, customDomains: []
+```
+
+Two details worth keeping:
+
+**Take the embed markup from an existing embed, not from `nav.html`.** The live
+embeds hold the SVG on one line; `nav.html` wraps its attributes across two.
+Reading the old chevron embed's `code` setting first made the new twelve
+byte-identical to the old.
+
+**The builder keeps source whitespace as `String` nodes.** Newlines between the
+spans inside each `.nv-link` became `textContent:" "` siblings — the § 12 build
+has none. Harmless and deliberately left alone: a whitespace-only text run in a
+flex container generates no flex item, so `gap` is untouched. Measured on the
+published page: `.nv-menu` has exactly 7 flex children and `.nv-link` keeps its
+`gap: 8px`.
+
+## 13.4 Verified on the published page
+
+`siegcourse.webflow.io/navbar-native`, published to the Webflow subdomain only —
+`academy.siegpath.com` and `course.siegpath.com` untouched.
+
+| | source | published |
+|---|---|---|
+| `data-nav-el` | 31 | **30** — the missing one is § 13.5 |
+| `data-nav-panel` / `data-nav-icon` | 12 / 7 | **12 / 7** |
+| `aria-expanded` / `aria-controls` | 7 / 7 | **7 / 7** |
+| `aria-hidden` / `aria-label` / `id="nv-*"` | 29 / 3 / 9 | **29 / 3 / 9** |
+| `<svg>` / `<path>` / `<line>` | 18 / 20 / 3 | **18 / 20 / 3** |
+| `<ul>` / `<li>` | 0 / 0 | **0 / 0** |
+| `role="list"` / `role="listitem"` | 1 / 7 | **1 / 7** |
+| `<button>` | 7 | **0** — all `<a>`, § 12.3 |
+
+In the browser: `cssLoaded: true`, `jsBooted: true`, one `nav.css` link and one
+`nav.js` script (§ 12.9 clean). `.nv-menu` is `DIV[role=list]`, all 7 items are
+`DIV[role=listitem]`, all 7 links are `A`, 12 SVGs inside the menu. Forcing one
+icon visible at desktop measures 20×20 with the right `d` — carets
+`m9 18 6-6-6-6`, chevrons `m15 18-6-6 6-6`.
+
+Hover on desktop still drives the panel morph: hovering AI-Platform sets
+`nv-is-active` on that item, unhides its panel and flips `aria-expanded`;
+switching to Company moves both and animates the body height (0 → 508px);
+`mouseleave` clears it.
+
+## 13.5 Pre-existing gaps, NOT from this change
+
+Three elements § 12.8 recorded are no longer on the page, all outside the menu
+subtree that was rebuilt. They were removed in the Designer at some point after
+§ 12 was written:
+
+- `a.nv-skip-link` — gone
+- `div.nv-scrim` (`data-nav-el="scrim"`) — gone. This is the only thing
+  `verify-port.js` now reports (`scrim → 0, expected 1`). `nav.js` guards it
+  (`if (scrim) …`), so nothing errors, but the drawer has no dim layer and
+  click-outside-to-close is dead on tablet/mobile.
+- the in-bar logo's `span.nv-logo-word` — gone, so the bar shows the mark
+  without the word. The standalone (mobile) logo still has its word.
+
+The wrapper div is down to 4 children from the 6 in § 12.8.
+
+## 13.6 The repo mirrors it
+
+`nav.html` is v1.2.0 and its derived files were regenerated by
+`tools/regen.py`. `nav.css` and `nav.js` are unchanged, so the loaders on the
+page still point at the **v1.1.1** CDN tag and that is correct — v1.2.0 has to be
+tagged and pushed before anything references it.

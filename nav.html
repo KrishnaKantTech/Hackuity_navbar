@@ -1,11 +1,11 @@
 <!-- ============================================================================
-     HACKUITY NAVBAR  ·  nav.html  ·  v1.1.1
+     HACKUITY NAVBAR  ·  nav.html  ·  v1.2.0
      Structure reference. This is the one-time conversion source for Webflow —
      rebuild this tree with native Webflow elements, then let nav.css / nav.js
      ride along from the CDN. Nothing here is generated at runtime.
 
-       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.css">
-       <script defer      src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.1.1/nav.js"></script>
+       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.0/nav.css">
+       <script defer      src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.0/nav.js"></script>
 
      THIS FILE IS THE ONE-TIME SOURCE. As of v1.1.0 the structure is built as
      native Webflow elements through the Webflow MCP, and Webflow owns it from
@@ -16,10 +16,10 @@
                            MCP creates real Webflow style blocks, so there is no
                            importer left to drop the second class.
        data-nav-el="*"     the JS contract. These must survive the port exactly.
-       data-nav-panel="*"  pairs an <li> with the <div> it opens.
+       data-nav-panel="*"  pairs an .nv-item with the panel it opens.
        data-nav-icon="*"   marks the ~30 icon tiles for the SVG swap (pass 2).
 
-     ONE DOM for all three breakpoints — a single <ul>, a single set of panels.
+     ONE DOM for all three breakpoints — a single .nv-menu, one set of panels.
      Desktop lifts the list into the bar, tablet turns it into a 193px rail,
      mobile turns it into a drawer. No markup is duplicated per breakpoint.
      ============================================================================ -->
@@ -94,11 +94,15 @@
     <div class="nv-body" id="nv-navbar-body" data-nav-el="body">
 
       <!-- ---------- link list ----------
+           div + role="list"/"listitem", not ul/li: a Webflow List only accepts
+           List Items, which blocks the Slot and the nv-item component planned
+           for this container. .nv-menu is display:flex anyway, which already
+           strips list semantics in Safari/VoiceOver — the roles restore them.
            desktop: absolutely positioned up into the bar row
            tablet : 193px rail on the RIGHT of the body
            mobile : full-width list, replaced by a panel on drill-in -->
-      <ul class="nv-menu" data-nav-el="menu">
-        <li class="nv-item" data-nav-el="item" data-nav-panel="platform">
+      <div class="nv-menu" role="list" data-nav-el="menu">
+        <div class="nv-item" role="listitem" data-nav-el="item" data-nav-panel="platform">
           <button class="nv-link" type="button" data-nav-el="link" aria-expanded="false" aria-controls="nv-panel-platform">
             <span class="nv-link-chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -110,9 +114,9 @@
                    stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </button>
-        </li>
+        </div>
 
-        <li class="nv-item" data-nav-el="item" data-nav-panel="solutions">
+        <div class="nv-item" role="listitem" data-nav-el="item" data-nav-panel="solutions">
           <button class="nv-link" type="button" data-nav-el="link" aria-expanded="false" aria-controls="nv-panel-solutions">
             <span class="nv-link-chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -124,9 +128,9 @@
                    stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </button>
-        </li>
+        </div>
 
-        <li class="nv-item" data-nav-el="item" data-nav-panel="partners">
+        <div class="nv-item" role="listitem" data-nav-el="item" data-nav-panel="partners">
           <button class="nv-link" type="button" data-nav-el="link" aria-expanded="false" aria-controls="nv-panel-partners">
             <span class="nv-link-chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -138,9 +142,9 @@
                    stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </button>
-        </li>
+        </div>
 
-        <li class="nv-item" data-nav-el="item" data-nav-panel="why">
+        <div class="nv-item" role="listitem" data-nav-el="item" data-nav-panel="why">
           <button class="nv-link" type="button" data-nav-el="link" aria-expanded="false" aria-controls="nv-panel-why">
             <span class="nv-link-chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -152,13 +156,13 @@
                    stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </button>
-        </li>
+        </div>
 
-        <li class="nv-item" data-nav-el="item">
+        <div class="nv-item" role="listitem" data-nav-el="item">
           <a class="nv-link" href="/pricing" data-nav-el="link"><span class="nv-link-label">Pricing</span></a>
-        </li>
+        </div>
 
-        <li class="nv-item" data-nav-el="item" data-nav-panel="resources">
+        <div class="nv-item" role="listitem" data-nav-el="item" data-nav-panel="resources">
           <button class="nv-link" type="button" data-nav-el="link" aria-expanded="false" aria-controls="nv-panel-resources">
             <span class="nv-link-chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -170,9 +174,9 @@
                    stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </button>
-        </li>
+        </div>
 
-        <li class="nv-item" data-nav-el="item" data-nav-panel="company">
+        <div class="nv-item" role="listitem" data-nav-el="item" data-nav-panel="company">
           <button class="nv-link" type="button" data-nav-el="link" aria-expanded="false" aria-controls="nv-panel-company">
             <span class="nv-link-chevron" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -184,8 +188,8 @@
                    stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </button>
-        </li>
-      </ul>
+        </div>
+      </div><!-- /.nv-menu -->
 
 
       <div class="nv-panels" data-nav-el="panels">

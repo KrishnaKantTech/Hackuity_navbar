@@ -107,7 +107,7 @@
   /* geometry */
   --nv-button-h: 48px;
   --nv-bar-h: 74px;
-  --nv-bar-inset: 64px;
+  --nv-bar-inset: 0px;
   --nv-bar-top: 40px;
   --nv-panel-tuck: 20px;
   /* desktop: bar bottom 114, Figma panel top 94 */
@@ -776,7 +776,6 @@ a.nv-card:hover {
   :root {
     --nv-bar-h: 80px;
     /* 80 = 16 + 48 + 16 */
-    --nv-bar-inset: 32px;
     --nv-panel-tuck: 22px;
     /* tablet: bar bottom 120, Figma panel top 98 */
   }
@@ -935,7 +934,6 @@ a.nv-card:hover {
    ========================================================================= */
 @media (max-width:767px) {
   :root {
-    --nv-bar-inset: 16px;
     --nv-panel-tuck: 24px;
     /* mobile: drawer bottom 794, bar top 770 */
   }

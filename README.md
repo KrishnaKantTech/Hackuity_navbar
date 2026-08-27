@@ -13,6 +13,13 @@ fonts/      Aeonik Regular + Medium (woff2), Bold (otf)
 NOTES.md    Figma measurements, decisions, verification log, porting map
 ```
 
+## For Releasing a new version:
+1. git add -A && git commit -m "vX.X.X Navbar CSS Update"
+2. git push
+3. git tag -a vX.X.X -m "vX.X.X Navbar CSS Update" && git push origin vX.X.X
+4. URL will be like https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@vX.X.X/nav.css
+
+## Testing the navbar locally
 Open `embed.html` in a browser to see it. Resize past 1620 / 768 / 480 to cross the breakpoints.
 
 ## The three-layer split
@@ -30,9 +37,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.0/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.1/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.0/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.1/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`

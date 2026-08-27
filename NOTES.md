@@ -1071,3 +1071,27 @@ The wrapper div is down to 4 children from the 6 in § 12.8.
 `tools/regen.py`. `nav.css` and `nav.js` are unchanged, so the loaders on the
 page still point at the **v1.1.1** CDN tag and that is correct — v1.2.0 has to be
 tagged and pushed before anything references it.
+
+
+---
+
+# 14 · The bar is full-bleed — `--nv-bar-inset` is 0 (v1.2.1)
+
+Done 2026-08-27. `.nv-wrap` now sits `left: 0 / right: 0` at every width.
+
+## 14.1 What changed in nav.css
+
+`--nv-bar-inset` was 64px desktop, overridden to 32px at `max-width:1619px`
+and 16px at `max-width:767px`. The root value is now `0px` and both overrides
+are deleted, so the token has one source of truth and no breakpoint can
+reintroduce a side gap. `--nv-bar-top` (40px) and `--nv-panel-tuck` are
+untouched — only the horizontal inset went away.
+
+## 14.2 The tag was cut, unlike § 13.6
+
+Unlike v1.2.0, this one had to ship: nav.css itself changed, and the CDN
+pins an immutable tag. So `v1.2.1` is tagged and pushed, and every loader
+(`README.md`, `nav.html`, `embed.html`, `webflow/htmltoflow.html`) points at
+it. The derived files came from `tools/regen.py`, which reads the tag out of
+the `nav.html` header comment — bump that line first or the regen re-emits
+the old CDN URLs.

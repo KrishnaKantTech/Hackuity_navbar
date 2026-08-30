@@ -66,27 +66,7 @@
    The `--nv-` prefix is what keeps them from colliding with Webflow variables.
    ========================================================================= */
 :root {
-  /* colour */
-  --nv-accent-9: #8a68e9;
-  --nv-accent-9-hover: #7a55e4;
-  --nv-accent-alpha-11: rgba(42, 0, 107, .933);
-  --nv-violet-alpha-3: rgba(55, 0, 255, .11);
-  /* active nav item */
-  --nv-gray-4: #e8e8e8;
-  --nv-gray-alpha-2: rgba(0, 0, 0, .02);
-  /* promo column ground */
-  --nv-neutral-alpha-3: rgba(0, 0, 0, .06);
-  --nv-white-alpha-9: rgba(255, 255, 255, .698);
-  --nv-text-primary: #202020;
-  --nv-text-heading: #1d1d21;
-  --nv-text-secondary: #646464;
-  --nv-text-disabled: rgba(0, 0, 0, .27);
-  --nv-text-logo: #1d0443;
-  --nv-accent-contrast: #ffffff;
-  --nv-surface: #ffffff;
-  --nv-icon-tile-bg: #f0ebff;
-  --nv-info-9: #0090ff;
-  --nv-scrim-bg: rgba(32, 32, 32, .28);
+  /* colour lives in section 1b, NOT here — see the note there. */
 
   /* spacing */
   --nv-space-1: 4px;
@@ -129,7 +109,6 @@
   --nv-link-pad: 16px;
   /* horizontal only — 7 links have to clear 1280px. Tablet restores 24. */
   --nv-blur: 20px;
-  --nv-shadow: 0 0 10px 0 var(--nv-gray-4);
   --nv-ease: cubic-bezier(.4, 0, .2, 1);
   --nv-dur: 300ms;
 
@@ -137,6 +116,77 @@
      Unitless on purpose: JS parses the number. Media queries below must match. */
   --nv-bp-tablet: 1279;
   --nv-bp-mobile: 767;
+}
+
+
+/* ============================================================================
+   1b. COLOUR — bound to Webflow's "Color" variable collection
+   ----------------------------------------------------------------------------
+   THESE ARE DELIBERATELY NOT ON :root, and that is the entire mechanism.
+
+   A custom property is substituted against the element it is DECLARED on. Put
+   `--nv-surface: var(--_color---white)` on :root and it resolves once, against
+   :root, and freezes at the Base value — Webflow writes its Dark mode as
+   `.dark-theme { --_color---white: #1c1c1e }`, which is BELOW :root and can
+   never reach back up. Declared here instead, on the four elements the
+   component actually roots at, the lookup happens inside `.dark-theme` and the
+   whole navbar flips for free: no JS, no media query, no second palette.
+
+   The four selectors are every top-level node in nav.html — .nv-wrap plus the
+   three that are siblings of it, not descendants. Everything else inherits.
+
+   Second value in each var() is the fallback, used verbatim anywhere the
+   Webflow variables are absent (embed.html, preview.html, a non-Webflow host).
+   Those fallbacks are the original Figma values, so the component still looks
+   right standing on its own.
+
+   Webflow's Variables panel is now the single source of truth for these: a
+   client retinting "Color" retints the navbar, in both modes, with no code
+   change here. Do not re-hardcode a colour into this file.
+
+   Three colours have no variable and stay literal on purpose:
+     --nv-accent-contrast  white button label; it sits on Accent 9, which is
+                           the same in both modes, so it must NOT flip.
+     --nv-scrim-bg         a dark page scrim reads correctly in both modes.
+     .nv-promo-media       has no fill of its own — it uses --nv-surface.
+   ========================================================================= */
+.nv-skip-link,
+.nv-logo--standalone,
+.nv-wrap,
+.nv-scrim {
+  --nv-accent-9: var(--_color---accent--accent-9, #8a68e9);
+  --nv-accent-9-hover: var(--_color---accent--accent-10, #7a55e4);
+  --nv-accent-alpha-11: var(--_color---accent--alpha-11, rgba(42, 0, 107, .933));
+  /* active nav item — Accent Alpha 3, not Violet Alpha 3: only the accent
+     ramp has a Dark value, and #3700ff1c is invisible on a dark ground. */
+  --nv-violet-alpha-3: var(--_color---accent--alpha-3, rgba(55, 0, 255, .11));
+  /* the pill's glow and the panel divider. Gray 3, not Gray 4: Gray 4 is
+     #e8e8e8 in BOTH modes, which leaves a bright halo round a dark bar. Gray 3
+     flips (#d8d8d8 -> #2c2c2c); the base shift is invisible on a 10px blur and
+     a 1px hairline. */
+  --nv-gray-4: var(--_color---gray--gray-3, #e8e8e8);
+  /* promo column ground */
+  --nv-gray-alpha-2: var(--_color---gray--gray-alpha-2, rgba(0, 0, 0, .02));
+  --nv-neutral-alpha-3: var(--_color---neutral--alpha-3, rgba(0, 0, 0, .06));
+  /* the bar pill itself — Effects/Translucent is the only translucent surface
+     with a Dark value (#1c1c1e99); White Alpha 9 stays white and would leave a
+     white bar on a dark page. */
+  --nv-white-alpha-9: var(--_color---effects-translucent, rgba(255, 255, 255, .698));
+  --nv-text-primary: var(--_color---text-primary, #202020);
+  --nv-text-heading: var(--_color---text-primary, #1d1d21);
+  --nv-text-secondary: var(--_color---secondary, #646464);
+  --nv-text-disabled: var(--_color---text-disabled, rgba(0, 0, 0, .27));
+  --nv-text-logo: var(--_color---misc--brand-font, #1d0443);
+  --nv-surface: var(--_color---white, #ffffff);
+  --nv-icon-tile-bg: var(--_color---accent--accent-2, #f0ebff);
+  --nv-info-9: var(--_color---semantic--info-9, #0090ff);
+
+  /* no variable — see the note above */
+  --nv-accent-contrast: #ffffff;
+  --nv-scrim-bg: rgba(32, 32, 32, .28);
+
+  /* colour-bearing, so it has to live here rather than with the geometry */
+  --nv-shadow: 0 0 10px 0 var(--nv-gray-4);
 }
 
 
@@ -236,7 +286,7 @@
   left: -9999px;
   top: 0;
   z-index: 999;
-  background: #fff;
+  background: var(--nv-surface);
   padding: 12px 16px;
   border-radius: var(--nv-radius-6);
 }
@@ -595,7 +645,7 @@
 .nv-promo-media {
   grid-area: media;
   min-height: 208px;
-  background: #fff;
+  background: var(--nv-surface);
   border-radius: var(--nv-radius-5)
 }
 

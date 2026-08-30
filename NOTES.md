@@ -1309,3 +1309,114 @@ Nothing in nav.css can fix that from outside.
 
 `.nv-panel-wrap` in `nav.css` § 5 matches nothing in `nav.html` and has done
 since at least v1.2.1 — dead rule, safe to delete next time § 5 is touched.
+
+
+---
+
+# 17 · Colour bound to Webflow variables — Dark mode (v1.5.0)
+
+Done 2026-08-31. The site has a "Color" variable collection with a **Dark** mode,
+applied via a `dark-theme` class on the `body` div (see
+`/in-progress/cookie-policy`). The navbar ignored it and stayed light. The
+requirement was one source of truth: a client retinting a variable must retint
+the navbar.
+
+## 17.1 The mechanism, and the one rule that makes it work
+
+Webflow emits its collection as custom properties — 65 on `:root`, and 64 of
+them redefined on `.dark-theme` / `.body.dark-theme`:
+
+```css
+:root        { --_color---white: white;    --_color---text-primary: #202020 }
+.dark-theme  { --_color---white: #1c1c1e;  --_color---text-primary: white   }
+```
+
+`.nv-wrap` is a descendant of `.body.dark-theme`, so the override is in scope.
+The trap is *where* the `--nv-*` tokens are declared:
+
+> A custom property is substituted against the element it is **declared** on.
+
+Leave `--nv-surface: var(--_color---white)` on `:root` and it resolves once,
+against `:root`, and freezes at the Base value forever — `.dark-theme` sits
+*below* `:root` and can never reach back up. So the whole colour block moved off
+`:root` onto the four elements nav.html actually roots at:
+
+```css
+.nv-skip-link, .nv-logo--standalone, .nv-wrap, .nv-scrim { --nv-*: var(--_color---*, fallback) }
+```
+
+Everything else inherits. No JS, no media query, no second palette. `:root`
+keeps the spacing / radius / type / geometry / breakpoint tokens, which is also
+where `nav.js` still reads `--nv-bp-*` from.
+
+`--nv-shadow` had to move too — it is `0 0 10px 0 var(--nv-gray-4)`, so it
+carries a colour and would have resolved against a `--nv-gray-4` that no longer
+existed on `:root`.
+
+## 17.2 The mapping, and the four that are not one-to-one
+
+Every token is `var(--_color---<name>, <original Figma value>)`. The fallback is
+what keeps `embed.html` / `preview.html` correct off-Webflow — verified
+byte-identical to pre-v1.5.0 there.
+
+Four choices are deliberate rather than obvious:
+
+| token | variable | why not the obvious one |
+|---|---|---|
+| `--nv-white-alpha-9` (the bar pill) | `effects-translucent` | White Alpha 9 does not flip — it would leave a **white bar on a dark page**. Effects/Translucent is the only translucent surface with a Dark value (`#1c1c1e99`). |
+| `--nv-violet-alpha-3` (active item) | `accent--alpha-3` | Violet Alpha 3 does not flip, and `#3700ff1c` is invisible on a dark ground. Accent Alpha 3 flips to `#7042fc38`. |
+| `--nv-gray-4` (pill glow + `.nv-split`) | `gray--gray-3` | Gray 4 is `#e8e8e8` in *both* modes — a bright halo round a dark bar, and a bright hairline. Gray 3 flips `#d8d8d8 → #2c2c2c`. |
+| `--nv-text-heading` | `text-primary` | No variable is `#1d1d21`; text-primary is `#202020` and flips to white. |
+
+Two stay literal: `--nv-accent-contrast` (white label on Accent 9, which is the
+same in both modes, so it must NOT flip) and `--nv-scrim-bg` (a dark page scrim
+reads correctly either way).
+
+Two stray `background: #fff` — `.nv-skip-link` and `.nv-promo-media` — became
+`var(--nv-surface)`, or they would have stayed white panels on a dark menu.
+
+## 17.3 Base-mode deltas, measured
+
+Binding to the site palette shifts five base values slightly. All were checked
+on `/book-a-demo` and none is visible except the last:
+
+| token | was | now |
+|---|---|---|
+| `--nv-accent-alpha-11` | `.933` alpha | `.94` |
+| `--nv-text-heading` | `#1d1d21` | `#202020` |
+| `--nv-icon-tile-bg` | `#f0ebff` | `#f3f0ff` |
+| `--nv-gray-4` | `#e8e8e8` | `#d8d8d8` |
+| `--nv-accent-9-hover` | `#7a55e4` | `#6c47c5` (Accent 10) |
+| `--nv-white-alpha-9` | 70% white | **60%** (Effects/Translucent) |
+
+The last one is the only perceptible change — the light-mode bar is slightly
+more see-through. That is now a Webflow knob, not a code one: raising
+Effects/Translucent's Base alpha to 70% restores the old look for the whole
+site. Same for the hover: adding a `#7a55e4` Dark/Base pair to Accent 10, or a
+new variable, brings it back. Do **not** re-hardcode either into nav.css.
+
+## 17.4 `getComputedStyle` lies about `<a>` colour — do not chase it
+
+Verifying this cost an hour. On the dark page, `getComputedStyle(navLink).color`
+reported `rgb(32,32,32)` while every ancestor and a `<span>` probe injected
+beside it reported white, and the link **rendered white**. Forcing
+`--nv-text-primary: red` inline on `.nv-wrap`, and even
+`.nv-link { color: … !important }`, did not move the reported value.
+
+That is Chrome's `:visited` privacy restriction: for an `<a href>`, the API
+returns a value computed in a restricted context rather than the used value.
+Probe with a non-anchor element, or read the screenshot. Both agreed the moment
+they were asked properly.
+
+Also note `nav.css` is served cross-origin from jsDelivr, so `ss.cssRules`
+throws on it — a JS scan of `document.styleSheets` silently cannot see any of
+the navbar's own rules. Curl the file instead.
+
+## 17.5 Verified
+
+- `/in-progress/cookie-policy` (Dark): bar `rgba(28,28,30,.6)`, panel surface
+  `#1c1c1e`, wordmark + links white, Login `#baa4ff`, active item `#7042fc38`,
+  icon tiles `#191627`, pill glow `#2c2c2c`. No light-mode artefact left.
+- `/book-a-demo` (Base): unchanged apart from § 17.3.
+- `embed.html` standalone, no Webflow variables present: all nineteen tokens
+  fall back to their exact pre-v1.5.0 values.

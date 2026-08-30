@@ -37,9 +37,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.4.0/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.0/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.4.0/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.0/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -104,6 +104,24 @@ panel and animates the surface to whatever height the component turns out to be.
 One thing to watch: the components are drawn at 1280. The slot is 1280 on desktop, but the tablet
 rail leaves it **767px** and the mobile drawer **viewport − 32**, so the component has to be
 responsive on its own.
+
+### Colour and Dark mode
+
+Every `--nv-*` colour is bound to Webflow's **Color** variable collection, so the Variables panel
+is the single source of truth — a client retinting a colour retints the navbar, in both modes,
+with no code change here. Dark mode needs no JS and no media query: the navbar flips because it
+sits inside `.dark-theme`.
+
+The tokens are declared on `.nv-skip-link, .nv-logo--standalone, .nv-wrap, .nv-scrim` — **never on
+`:root`**. A `var()` resolves against the element it is declared on, so a `:root` declaration
+freezes at the Base value and `.dark-theme` (which lives below `:root`) can never reach it. Keep
+them on the component roots or dark mode silently stops working.
+
+Each is written `var(--_color---<name>, <figma-fallback>)`. The fallbacks are the original Figma
+values, so `embed.html`, `preview.html` and any non-Webflow host still render correctly.
+
+Two colours are literal on purpose: `--nv-accent-contrast` (white label on Accent 9, which does not
+flip, so it must not either) and `--nv-scrim-bg` (a dark scrim reads right in both modes).
 
 Two more things Webflow must not undo:
 

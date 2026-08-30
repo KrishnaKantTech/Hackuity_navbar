@@ -6,7 +6,8 @@
    draws, and it is the only thing that resizes when you switch heads.
 
    Values read from Figma 7Dm6a0NkHsli9Q8VTy4FAx via the Figma MCP server.
-   Breakpoints are Webflow's own tiers: desktop base, then max-width 1439 / 767 / 479.
+   Breakpoints are Webflow's own tiers: desktop base, then max-width 1439 (compact
+   link row) / 1279 (hamburger) / 767 / 479.
    The bar is aligned to Webflow's `.container-1280` — a 1280px content box with a
    32px gutter (16px at <=767) — so the pill's edges land on the page's own content
    edges instead of running full-bleed.
@@ -134,7 +135,7 @@
 
   /* breakpoints — nav.js reads these, so they are declared in one place only.
      Unitless on purpose: JS parses the number. Media queries below must match. */
-  --nv-bp-tablet: 1439;
+  --nv-bp-tablet: 1279;
   --nv-bp-mobile: 767;
 }
 
@@ -787,12 +788,30 @@ a.nv-card:hover {
 
 
 /* ============================================================================
-   6. TABLET — <= 1439px   (keep in sync with --nv-bp-tablet)
-   Webflow's 1440 tier is the last one where the container is a full 1280 wide
-   (it caps from 1344px of viewport up). Measured desktop row inside that box:
-   24 + 175.535 logo + 24 gap + 751 links + 91 Login + 8 + 158 Demo + 16 = 1248,
-   so it clears 1280 by 32px. At Webflow's 1280 tier the container is only
-   1216 and the margin is 6px — too thin to trust a label change. See NOTES.md.
+   5b. COMPACT DESKTOP ROW — <= 1439px   (Webflow's 1280 tier)
+   Between 1280 and 1439 the container is narrower than its 1280 cap
+   (vw - 64), bottoming out at 1216 at exactly 1280px of viewport. The row
+   still fits, but only on 12px link padding:
+
+     24 padL + 175.535 logo + 24 gap + 695 links + 91 Login + 8 + 158 Demo
+     + 16 padR = 1191.5, inside 1216 with 24px to spare.
+
+   At 16px padding it would be 31.5px over. Nothing else in the bar moves —
+   this block sets one token and stops. The collapse block below re-raises the
+   padding to 24 for the rail, and wins because it comes later.
+   ========================================================================= */
+@media (max-width:1439px) {
+  :root {
+    --nv-link-pad: 12px;
+  }
+}
+
+
+/* ============================================================================
+   6. TABLET — <= 1279px   (keep in sync with --nv-bp-tablet)
+   Webflow's 1280 tier is the last one the horizontal row survives — see 5b for
+   the arithmetic. Below 1280 the container keeps shrinking (vw - 64) while the
+   row's floor is ~1191, so the hamburger takes over at 1279.
    This block therefore also covers Webflow's Tablet tier (<=991); that tier
    needs no rules of its own.
    Open state: mega-menu on the LEFT, 193px link rail on the RIGHT.
@@ -800,14 +819,15 @@ a.nv-card:hover {
    NOTE the mobile block below inherits from this one — it deliberately does
    not restate --nv-bar-h, the hamburger, the hidden Login, or the column rail.
    ========================================================================= */
-@media (max-width:1439px) {
+@media (max-width:1279px) {
   :root {
     --nv-bar-h: 80px;
     /* 80 = 16 + 48 + 16 */
     --nv-panel-tuck: 22px;
     /* tablet: bar bottom 120, Figma panel top 98 */
     --nv-link-pad: var(--nv-space-5);
-    /* 24 back — the rail is 193px wide and has room again */
+    /* 24 back — the rail is 193px wide and has room again. Later than 5b, so
+       it wins where both apply. */
   }
 
   .nv-bar {

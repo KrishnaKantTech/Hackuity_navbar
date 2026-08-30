@@ -1099,7 +1099,7 @@ the old CDN URLs.
 
 ---
 
-# 15 · The bar lives in Webflow's `.container-1280` (v1.3.0)
+# 15 · The bar lives in Webflow's `.container-1280` (v1.3.0 → v1.3.1)
 
 Done 2026-08-30. Full-bleed is gone again — but this time the bar is not inset
 by an arbitrary token, it is *inside the same container the page content uses*.
@@ -1167,27 +1167,51 @@ square highlight is drawn off. Measured: the row is still exactly 74px.
 The tablet block sets `--nv-link-pad: var(--nv-space-5)` to put 24px back; the
 193px rail has the room and nothing there is width-constrained.
 
-## 15.4 Why the collapse moved 1619 → 1439, and no lower
+## 15.4 Why the collapse moved 1619 → 1279 (v1.3.1)
 
-The container caps at 1280 content from **1344px of viewport** upward, so any
-breakpoint at or above 1344 gets the full 1280 budget. Webflow's 1440 tier is
-the lowest stock tier that clears it, so `--nv-bp-tablet` is now `1439` and the
-media query is `max-width:1439px`. `nav.js` reads the token, so only its
-fallback literal had to move.
+v1.3.0 collapsed at 1439, which cost the whole 1280–1439 band — every 1366 and
+1440-class laptop got the hamburger. It does not have to.
 
-One tier lower is not worth it: at Webflow's 1280 tier the container is
-`1280 − 64 = 1216` and the row needs 1248, so it would fit with 6px to spare —
-thin enough that one renamed nav item breaks it. 992–1439 gets the hamburger.
+The container caps at 1280 content from **1344px of viewport** up; below that it
+is `vw − 64`, bottoming out at **1216** at exactly 1280px of viewport. So the
+question is only whether the row fits 1216, and at 12px link padding it does:
+
+```
+24 padL + 175.535 logo + 24 gap + 695 links (527 text + 14 × 12) + 91 Login
++ 8 + 158 Demo + 16 padR = 1191.5   →  24px to spare inside 1216
+```
+
+Hence a **new § 5b block** in `nav.css`: `@media (max-width:1439px)` sets
+`--nv-link-pad: 12px` and nothing else. It is one token, placed *before* the
+collapse block so the collapse block's `24px` still wins on the rail.
+
+`--nv-bp-tablet` is therefore `1279`, the media query is `max-width:1279px`, and
+the three states line up with Webflow's stock tiers exactly:
+
+| viewport | Webflow tier | nav |
+|---|---|---|
+| ≥1440 | 1440 / 1920 | row, 16px link padding |
+| 1280–1439 | 1280 | row, 12px link padding |
+| 992–1279 | Desktop base | hamburger + 193px rail |
+| 768–991 | Tablet | hamburger + 193px rail |
+| ≤767 / ≤479 | Mobile | bottom bar + drawer |
+
+Below 1280 nothing saves it — the container keeps shrinking while the row's
+floor stays ~1191, so 1279 is a real wall, not a chosen one.
+
+`nav.js` reads the token, so only its fallback literal had to move.
 
 Webflow's Tablet tier (≤991) needs no rules of its own — the `max-width:1439px`
 block already covers it, exactly as the old 1619 block used to.
 
-Verified in `embed.html` at 1920 / 1600 / 1440 / 1439 / 1344 / 1280 / 1024 /
-992 / 991 / 768 / 767 / 600 / 480 / 479 / 402 / 375: zero horizontal overflow,
-correct gutter (32 above 767, 16 below), links totalling 751px with a 32px gap
-to Login, a 74px row at every width, and the row→rail flip landing exactly on
-the 1440/1439 boundary. Injected over the live Book-a-Demo page the bar
-measures `x=215 w=1280`, identical to `.book-a-demo-wrap`.
+Verified in `embed.html` at 1920 / 1440 / 1439 / 1400 / 1344 / 1300 / 1281 /
+1280 / 1279 / 1200 / 1024 / 992 / 991 / 768 / 767 / 480 / 479 / 402 / 375: zero
+horizontal overflow anywhere, correct gutter (32 above 767, 16 below), a 74px
+row at every width, and both flips landing exactly on their boundaries —
+16px→12px padding at 1440/1439, row→hamburger at 1280/1279. Worst-case gap
+between the last link and Login is **24px, at 1280**. Injected over the live
+Book-a-Demo page the bar measures `x=215 w=1280`, identical to
+`.book-a-demo-wrap`.
 
 ## 15.5 Two things the Webflow port has to do
 
@@ -1202,7 +1226,12 @@ measures `x=215 w=1280`, identical to `.book-a-demo-wrap`.
 ## 15.6 The tag
 
 `v1.3.0` — minor, not patch: the collapse breakpoint and the link type both
-moved, so this is not a drop-in for v1.2.1. `nav.html` is byte-identical, but
-its header comment carries the tag `tools/regen.py` reads, so it was bumped
-and every derived file regenerated. Loaders repointed in `README.md`,
+moved, so this is not a drop-in for v1.2.1. `v1.3.1` follows immediately with
+§ 15.4's compact band, recovering 1280–1439. `nav.html` is byte-identical in
+both, but its header comment carries the tag `tools/regen.py` reads, so it was
+bumped and every derived file regenerated. Loaders repointed in `README.md`,
 `nav.html`, `embed.html` and `webflow/htmltoflow.html`.
+
+Nothing in § 15.5 changes for v1.3.1 — the Webflow markup is untouched, so the
+port still only needs the `.container-1792` deletion, the `.nv-menu`
+`left:223.535px` fix, and the two loaders repointed.

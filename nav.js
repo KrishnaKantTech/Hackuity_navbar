@@ -10,8 +10,8 @@
    the active panel's height, so switching heads morphs the mega-menu rather
    than closing and reopening it.
 
-     desktop (>1619)  hover / click a head -> panel surface grows to that panel
-     tablet  (<=1619) Menu -> Close; 193px rail on the RIGHT switches panels
+     desktop (>1439)  hover / click a head -> panel surface grows to that panel
+     tablet  (<=1439) Menu -> Close; 193px rail on the RIGHT switches panels
      mobile  (<=767)  Menu -> list; tap a head -> that panel replaces the list,
                       and the button becomes a back chevron
 
@@ -93,7 +93,7 @@
   }
   function mode() {
     var w = window.innerWidth;
-    if (w > cssNum('--nv-bp-tablet', 1619)) return 'desktop';
+    if (w > cssNum('--nv-bp-tablet', 1439)) return 'desktop';
     return w > cssNum('--nv-bp-mobile', 767) ? 'tablet' : 'mobile';
   }
 
@@ -151,7 +151,7 @@
        Skipping this is what produced the blank mega-menu column: closing a
        panel on desktop writes `height:0px` inline on .nv-panels, and that
        inline value outranks the tablet/mobile rule that wants it back at
-       `height:auto`. Cross below 1620, open the drawer, and the drawer sizes
+       `height:auto`. Cross below 1440, open the drawer, and the drawer sizes
        itself correctly around a panel column collapsed to nothing. */
     if (panelsEl !== node) panelsEl.style.height = '';
     if (body     !== node) body.style.height = '';

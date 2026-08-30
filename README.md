@@ -20,7 +20,7 @@ NOTES.md    Figma measurements, decisions, verification log, porting map
 4. URL will be like https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@vX.X.X/nav.css
 
 ## Testing the navbar locally
-Open `embed.html` in a browser to see it. Resize past 1620 / 768 / 480 to cross the breakpoints.
+Open `embed.html` in a browser to see it. Resize past 1440 / 768 / 480 to cross the breakpoints.
 
 ## The three-layer split
 
@@ -37,9 +37,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.1/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.3.0/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.2.1/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.3.0/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -93,16 +93,30 @@ Two more things Webflow must not undo:
 
 - **Load `nav.css` after Webflow's own CSS.** It contains no reset — Webflow's normalize is the
   reset, and every rule here is scoped to an `nv-` class so it cannot reach outside the component.
-- **The 1619px breakpoint is not a Webflow breakpoint.** It lives in `nav.css` only. See NOTES.md § 2
-  for why the desktop bar cannot survive below 1610px, and the three options for what to do about it.
+- **Breakpoints match Webflow's own tiers** — the row collapses at `max-width:1439px`, the bottom
+  bar takes over at `767`, and `479` is the portrait tier. Webflow's `991` tier needs no rules; the
+  1439 block already covers it. See NOTES.md § 15.4 for why 1439 is the floor.
+- **The bar is a `.container-1280`, not a full-bleed pill.** `.nv-wrap` carries the 32px gutter
+  (16px at ≤767) and `.nv-shell` caps at 1280px, so the pill's edges land on the page's own content
+  edges. Delete any `.container-*` wrapper Webflow has around `.nv-wrap` — it would double the
+  gutter. See NOTES.md § 15.
 
 ## Editing
 
 Breakpoints are declared once, in `nav.css`:
 
 ```css
---nv-bp-tablet:1619;
+--nv-bp-tablet:1439;
 --nv-bp-mobile:767;
+```
+
+So is the container the bar sits in, and the link spacing that makes 7 links fit it:
+
+```css
+--nv-container-max:1280px;   /* pill width — mirrors Webflow .container-1280 */
+--nv-container-pad:32px;     /* gutter outside it; 16px at <=767 */
+--nv-link-pad:12px;          /* horizontal only; tablet puts 24px back */
+--nv-menu-left:223.535px;    /* 24 bar padding + 175.535 logo + 24 gap */
 ```
 
 `nav.js` reads those at runtime, so the script and the media queries cannot drift. Change the token

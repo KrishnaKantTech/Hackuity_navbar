@@ -6,7 +6,10 @@
    draws, and it is the only thing that resizes when you switch heads.
 
    Values read from Figma 7Dm6a0NkHsli9Q8VTy4FAx via the Figma MCP server.
-   Breakpoints: desktop base, then max-width 1619 / 767 / 479.
+   Breakpoints are Webflow's own tiers: desktop base, then max-width 1439 / 767 / 479.
+   The bar is aligned to Webflow's `.container-1280` — a 1280px content box with a
+   32px gutter (16px at <=767) — so the pill's edges land on the page's own content
+   edges instead of running full-bleed.
 
    ── Webflow / CDN contract ────────────────────────────────────────────────
    1. Every class is namespaced `nv-`. Every custom property is namespaced
@@ -107,14 +110,23 @@
   /* geometry */
   --nv-button-h: 48px;
   --nv-bar-h: 74px;
-  --nv-bar-inset: 0px;
   --nv-bar-top: 40px;
+
+  /* container — mirrors Webflow's `.container-1280`, which is
+       width:100%; max-width:84rem (1344); padding-inline:2rem (32)  ->  1280 content.
+     --nv-container-max IS that 1280 content box (the pill's own width), and
+     --nv-container-pad is the gutter outside it. Webflow drops the gutter to
+     1rem at <=767, and so does the mobile block below. */
+  --nv-container-max: 1280px;
+  --nv-container-pad: 32px;
   --nv-panel-tuck: 20px;
   /* desktop: bar bottom 114, Figma panel top 94 */
   --nv-rail-w: 193px;
   /* tablet: Figma 767 + 193 = 960 */
-  --nv-menu-left: 239.535px;
-  /* 24 padding + 175.535 logo + 40 gap */
+  --nv-menu-left: 223.535px;
+  /* 24 bar padding + 175.535 logo + 24 gap */
+  --nv-link-pad: 16px;
+  /* horizontal only — 7 links have to clear 1280px. Tablet restores 24. */
   --nv-blur: 20px;
   --nv-shadow: 0 0 10px 0 var(--nv-gray-4);
   --nv-ease: cubic-bezier(.4, 0, .2, 1);
@@ -122,7 +134,7 @@
 
   /* breakpoints — nav.js reads these, so they are declared in one place only.
      Unitless on purpose: JS parses the number. Media queries below must match. */
-  --nv-bp-tablet: 1619;
+  --nv-bp-tablet: 1439;
   --nv-bp-mobile: 767;
 }
 
@@ -291,13 +303,22 @@
 .nv-wrap {
   position: fixed;
   top: var(--nv-bar-top);
-  left: var(--nv-bar-inset);
-  right: var(--nv-bar-inset);
+  left: 0;
+  right: 0;
+  padding-left: var(--nv-container-pad);
+  padding-right: var(--nv-container-pad);
   z-index: 100;
 }
 
+/* The shell IS the container. Keeping max-width here rather than on .nv-wrap
+   matters: .nv-body and .nv-menu position against the shell, so the drawer and
+   the mega-menu inherit the same 1280 box the pill sits in. */
 .nv-shell {
-  position: relative
+  position: relative;
+  width: 100%;
+  max-width: var(--nv-container-max);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .nv-bar {
@@ -310,8 +331,8 @@
   box-shadow: var(--nv-shadow);
   display: flex;
   align-items: center;
-  gap: var(--nv-space-7);
-  /* 40 */
+  gap: var(--nv-space-5);
+  /* 24 — was 40; the 1280 box cannot spare it. Mirrored in --nv-menu-left. */
   height: var(--nv-bar-h);
   /* 74 = 24+26+24 */
   padding: 0 var(--nv-space-4) 0 var(--nv-space-5);
@@ -367,10 +388,12 @@
   display: flex;
   align-items: center;
   gap: var(--nv-space-2);
-  padding: var(--nv-space-5);
-  /* 24 — this IS the spacing between links */
-  font-size: 18px;
+  padding: var(--nv-space-5) var(--nv-link-pad);
+  /* vertical 24 = the 74px row height and the active highlight.
+     horizontal is --nv-link-pad, which IS the spacing between links. */
+  font-size: 16px;
   line-height: 26px;
+  /* line-height stays 26 on purpose: 24 + 26 + 24 is the 74px row. */
   font-weight: 700;
   letter-spacing: -.04px;
   color: var(--nv-text-primary);
@@ -764,20 +787,27 @@ a.nv-card:hover {
 
 
 /* ============================================================================
-   6. TABLET — <= 1619px   (keep in sync with --nv-bp-tablet)
-   The desktop bar cannot hold logo + 7 links + Login + Book a Demo below
-   1610px (measured: 1482px of content + 128px insets). See NOTES.md.
+   6. TABLET — <= 1439px   (keep in sync with --nv-bp-tablet)
+   Webflow's 1440 tier is the last one where the container is a full 1280 wide
+   (it caps from 1344px of viewport up). Measured desktop row inside that box:
+   24 + 175.535 logo + 24 gap + 751 links + 91 Login + 8 + 158 Demo + 16 = 1248,
+   so it clears 1280 by 32px. At Webflow's 1280 tier the container is only
+   1216 and the margin is 6px — too thin to trust a label change. See NOTES.md.
+   This block therefore also covers Webflow's Tablet tier (<=991); that tier
+   needs no rules of its own.
    Open state: mega-menu on the LEFT, 193px link rail on the RIGHT.
 
    NOTE the mobile block below inherits from this one — it deliberately does
    not restate --nv-bar-h, the hamburger, the hidden Login, or the column rail.
    ========================================================================= */
-@media (max-width:1619px) {
+@media (max-width:1439px) {
   :root {
     --nv-bar-h: 80px;
     /* 80 = 16 + 48 + 16 */
     --nv-panel-tuck: 22px;
     /* tablet: bar bottom 120, Figma panel top 98 */
+    --nv-link-pad: var(--nv-space-5);
+    /* 24 back — the rail is 193px wide and has room again */
   }
 
   .nv-bar {
@@ -936,13 +966,13 @@ a.nv-card:hover {
   :root {
     --nv-panel-tuck: 24px;
     /* mobile: drawer bottom 794, bar top 770 */
+    --nv-container-pad: 16px;
+    /* Webflow drops .container-1280 to padding-inline:1rem here */
   }
 
   .nv-wrap {
     top: auto;
-    bottom: var(--nv-space-5);
-    left: var(--nv-bar-inset);
-    right: var(--nv-bar-inset)
+    bottom: var(--nv-space-5)
   }
 
   .nv-bar {

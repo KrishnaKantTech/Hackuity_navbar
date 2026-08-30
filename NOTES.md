@@ -1095,3 +1095,114 @@ pins an immutable tag. So `v1.2.1` is tagged and pushed, and every loader
 it. The derived files came from `tools/regen.py`, which reads the tag out of
 the `nav.html` header comment — bump that line first or the regen re-emits
 the old CDN URLs.
+
+
+---
+
+# 15 · The bar lives in Webflow's `.container-1280` (v1.3.0)
+
+Done 2026-08-30. Full-bleed is gone again — but this time the bar is not inset
+by an arbitrary token, it is *inside the same container the page content uses*.
+
+## 15.1 What the reference page actually does
+
+Measured on `https://hackuityai.webflow.io/book-a-demo` at a 1710px viewport:
+
+```
+.container-1280   width:100%; max-width:84rem (1344); padding-inline:2rem (32)
+                  → 1280px content box, x=215 … 1495
+.book-a-demo-wrap x=215  w=1280      ← every section on the page sits here
+@media (max-width:767px) .container-1280 { padding-inline:1rem }
+```
+
+The page's own media queries are Webflow's stock tiers and nothing else:
+`min-width 1920 / 1440 / 1280` and `max-width 991 / 767 / 479`. There is **no**
+1619 anywhere on the page — that number was ours alone.
+
+Note the page also has `.container-1792` (max-width 116rem, same 32px gutter),
+and the *current* Webflow build wraps `.nv-wrap` in one. That wrapper is why the
+bar reads as full-bleed. See § 15.5.
+
+## 15.2 What changed in nav.css
+
+`--nv-bar-inset` is deleted. Two tokens replace it:
+
+```css
+--nv-container-max: 1280px;   /* the content box — this IS the pill's width */
+--nv-container-pad: 32px;     /* the gutter outside it; 16px at <=767 */
+```
+
+The gutter goes on `.nv-wrap` (still `fixed; left:0; right:0`) and the cap goes
+on `.nv-shell`, not the other way round. That ordering is load-bearing:
+`.nv-menu` (desktop) and `.nv-body` (mobile drawer) are absolutely positioned
+against `.nv-shell`, and an abspos child resolves against the **padding box**.
+Put the padding on `.nv-shell` and the drawer would spill 2 × 32px wider than
+the pill it is tucked behind.
+
+## 15.3 Making 7 links fit 1280 — this is NOTES § 2 option B
+
+The desktop row needed 1466px inside the old full-bleed bar. The budget is now
+a hard 1280. Two things give it back: the link type drops 18px → **16px** (593px
+of text becomes 527px), and the horizontal link padding drops 24 → **16px**:
+
+```
+24 bar padding-left
+175.535 logo
+24 gap            (was 40 — --nv-space-7 → --nv-space-5)
+751 links         (527 text at 16px + 14 × 16px --nv-link-pad; was 929)
+32 slack
+91 Login
+8 actions gap
+158 Book a Demo
+16 bar padding-right
+= 1280, with 32px of breathing room between the last link and Login
+```
+
+`--nv-menu-left` drops 239.535 → **223.535** (24 + 175.535 + 24) to match the
+smaller bar gap. `--nv-link-pad` is horizontal only, and `line-height` stays
+**26px** even though the font shrank — the link's vertical padding is still
+`--nv-space-5`, and 24 + 26 + 24 is the 74px row height the active item's
+square highlight is drawn off. Measured: the row is still exactly 74px.
+
+The tablet block sets `--nv-link-pad: var(--nv-space-5)` to put 24px back; the
+193px rail has the room and nothing there is width-constrained.
+
+## 15.4 Why the collapse moved 1619 → 1439, and no lower
+
+The container caps at 1280 content from **1344px of viewport** upward, so any
+breakpoint at or above 1344 gets the full 1280 budget. Webflow's 1440 tier is
+the lowest stock tier that clears it, so `--nv-bp-tablet` is now `1439` and the
+media query is `max-width:1439px`. `nav.js` reads the token, so only its
+fallback literal had to move.
+
+One tier lower is not worth it: at Webflow's 1280 tier the container is
+`1280 − 64 = 1216` and the row needs 1248, so it would fit with 6px to spare —
+thin enough that one renamed nav item breaks it. 992–1439 gets the hamburger.
+
+Webflow's Tablet tier (≤991) needs no rules of its own — the `max-width:1439px`
+block already covers it, exactly as the old 1619 block used to.
+
+Verified in `embed.html` at 1920 / 1600 / 1440 / 1439 / 1344 / 1280 / 1024 /
+992 / 991 / 768 / 767 / 600 / 480 / 479 / 402 / 375: zero horizontal overflow,
+correct gutter (32 above 767, 16 below), links totalling 751px with a 32px gap
+to Login, a 74px row at every width, and the row→rail flip landing exactly on
+the 1440/1439 boundary. Injected over the live Book-a-Demo page the bar
+measures `x=215 w=1280`, identical to `.book-a-demo-wrap`.
+
+## 15.5 Two things the Webflow port has to do
+
+1. **Delete the `.container-1792` wrapper** between `.nv-wrap` and `.nv-shell`.
+   It is redundant now and its 32px padding would double the gutter.
+2. **`.nv-menu` left is a Designer value, not the token.** On the live build
+   `.nv-menu` computes `left:239.535px` even when `--nv-menu-left` is
+   overridden — the native rebuild wrote the number into a Webflow style block.
+   Set it to `223.535px` in the Designer or the link row sits 16px too far
+   right and the gap to Login collapses to 6px.
+
+## 15.6 The tag
+
+`v1.3.0` — minor, not patch: the collapse breakpoint and the link type both
+moved, so this is not a drop-in for v1.2.1. `nav.html` is byte-identical, but
+its header comment carries the tag `tools/regen.py` reads, so it was bumped
+and every derived file regenerated. Loaders repointed in `README.md`,
+`nav.html`, `embed.html` and `webflow/htmltoflow.html`.

@@ -29,13 +29,13 @@
 <body>
 
 <!-- ============================================================================
-     HACKUITY NAVBAR  ·  nav.html  ·  v1.3.1
+     HACKUITY NAVBAR  ·  nav.html  ·  v1.4.0
      Structure reference. This is the one-time conversion source for Webflow —
      rebuild this tree with native Webflow elements, then let nav.css / nav.js
      ride along from the CDN. Nothing here is generated at runtime.
 
-       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.3.1/nav.css">
-       <script defer      src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.3.1/nav.js"></script>
+       <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.4.0/nav.css">
+       <script defer      src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.4.0/nav.js"></script>
 
      THIS FILE IS THE ONE-TIME SOURCE. As of v1.1.0 the structure is built as
      native Webflow elements through the Webflow MCP, and Webflow owns it from
@@ -48,6 +48,13 @@
        data-nav-el="*"     the JS contract. These must survive the port exactly.
        data-nav-panel="*"  pairs an .nv-item with the panel it opens.
        data-nav-icon="*"   marks the ~30 icon tiles for the SVG swap (pass 2).
+
+     Each .nv-panel opens with an empty `.nv-panel-inner`. That is the Webflow
+     component slot: put the panel's component inside it and the Editor can edit
+     the mega-menu content on a protected page, with the navbar picking the
+     change up everywhere. It carries no padding, background or layout — the
+     components already do — and nav.css hides it while it is empty, so the
+     hand-built panel content below it is unaffected until you delete it.
 
      ONE DOM for all three breakpoints — a single .nv-menu, one set of panels.
      Desktop lifts the list into the bar, tablet turns it into a 193px rail,
@@ -226,6 +233,11 @@
 
         <!-- ============ AI-PLATFORM — Figma 87:289 ============ -->
         <div class="nv-panel" id="nv-panel-platform" data-nav-el="panel" data-nav-panel="platform" hidden>
+          <!-- Webflow component slot. Empty on purpose — drop this panel's
+               component in here so the Editor owns its content, then delete
+               the hand-built siblings below it. nav.css hides it while empty,
+               and nothing in nav.js reaches inside it. -->
+          <div class="nv-panel-inner"></div>
           <div class="nv-promo">
             <div class="nv-promo-head">
               <p class="nv-promo-title">Platform overview</p>
@@ -310,6 +322,11 @@
 
         <!-- ============ PARTNERS — Figma 212:7449 ============ -->
         <div class="nv-panel nv-panel--thirds" id="nv-panel-partners" data-nav-el="panel" data-nav-panel="partners" hidden>
+          <!-- Webflow component slot. Empty on purpose — drop this panel's
+               component in here so the Editor owns its content, then delete
+               the hand-built siblings below it. nav.css hides it while empty,
+               and nothing in nav.js reaches inside it. -->
+          <div class="nv-panel-inner"></div>
           <div class="nv-groups">
             <section class="nv-group">
               <h2 class="nv-group-label">Partners</h2>
@@ -337,15 +354,35 @@
 
         <!-- ============ Pass 2: Solutions / Why Hackuity / Resources / Company ============ -->
         <div class="nv-panel" id="nv-panel-solutions" data-nav-el="panel" data-nav-panel="solutions" hidden>
+          <!-- Webflow component slot. Empty on purpose — drop this panel's
+               component in here so the Editor owns its content, then delete
+               the hand-built siblings below it. nav.css hides it while empty,
+               and nothing in nav.js reaches inside it. -->
+          <div class="nv-panel-inner"></div>
           <div class="nv-groups"><p class="nv-todo">Solutions — content extraction queued for pass 2.</p></div>
         </div>
         <div class="nv-panel" id="nv-panel-why" data-nav-el="panel" data-nav-panel="why" hidden>
+          <!-- Webflow component slot. Empty on purpose — drop this panel's
+               component in here so the Editor owns its content, then delete
+               the hand-built siblings below it. nav.css hides it while empty,
+               and nothing in nav.js reaches inside it. -->
+          <div class="nv-panel-inner"></div>
           <div class="nv-groups"><p class="nv-todo">Why Hackuity — content extraction queued for pass 2.</p></div>
         </div>
         <div class="nv-panel" id="nv-panel-resources" data-nav-el="panel" data-nav-panel="resources" hidden>
+          <!-- Webflow component slot. Empty on purpose — drop this panel's
+               component in here so the Editor owns its content, then delete
+               the hand-built siblings below it. nav.css hides it while empty,
+               and nothing in nav.js reaches inside it. -->
+          <div class="nv-panel-inner"></div>
           <div class="nv-groups"><p class="nv-todo">Resources — content extraction queued for pass 2.</p></div>
         </div>
         <div class="nv-panel" id="nv-panel-company" data-nav-el="panel" data-nav-panel="company" hidden>
+          <!-- Webflow component slot. Empty on purpose — drop this panel's
+               component in here so the Editor owns its content, then delete
+               the hand-built siblings below it. nav.css hides it while empty,
+               and nothing in nav.js reaches inside it. -->
+          <div class="nv-panel-inner"></div>
           <div class="nv-groups"><p class="nv-todo">Company — content extraction queued for pass 2.</p></div>
         </div>
 

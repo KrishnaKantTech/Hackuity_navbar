@@ -528,6 +528,34 @@
   display: none
 }
 
+
+/* ---------- Webflow component slot ----------
+   `.nv-panel-inner` is the one place Webflow owns. A component dropped in here
+   keeps the mega-menu content editable in the Editor, on a protected page,
+   and the navbar picks the change up everywhere.
+
+   Deliberately styleless: no padding, no background, no layout of its own.
+   The components on /in-draft/navbar are already full-width blocks carrying
+   their own 48px 40px 40px, so anything added here would double up.
+
+   `:empty` keeps the slot out of .nv-panel's 32px gap until something is in
+   it — that is what lets the hand-built panels keep rendering unchanged while
+   the port is half-done. It is whitespace-sensitive, so `.nv-panel-inner` must
+   stay written with no space between its tags.
+
+   Width, not flex-basis: .nv-panel is a row on desktop and a column at <=1279,
+   and `width:100%` + `align-self:stretch` fills correctly in both. */
+.nv-panel-inner {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.nv-panel-inner:empty {
+  display: none
+}
+
 /* promo column — Figma 87:298, 424 wide, self-stretch */
 .nv-promo {
   flex: 0 0 424px;

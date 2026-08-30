@@ -1235,3 +1235,77 @@ bumped and every derived file regenerated. Loaders repointed in `README.md`,
 Nothing in § 15.5 changes for v1.3.1 — the Webflow markup is untouched, so the
 port still only needs the `.container-1792` deletion, the `.nv-menu`
 `left:223.535px` fix, and the two loaders repointed.
+
+
+---
+
+# 16 · `.nv-panel-inner` — the Webflow component slot (v1.4.0)
+
+Done 2026-08-30. The mega-menu content needs to be editable by a client in the
+Webflow Editor, which means it has to be a Webflow **component** placed on a
+protected page, not markup this repo owns. Components already exist on
+`hackuityai.webflow.io/in-draft/navbar` — six `.nav-menu-components`, each a
+full-width block carrying its own `48px 40px 40px`.
+
+## 16.1 What was added
+
+One empty div, first child of all six panels:
+
+```html
+<div class="nv-panel" id="nv-panel-platform" ...>
+  <div class="nv-panel-inner"></div>
+  ...hand-built content, to be deleted once the component is in...
+</div>
+```
+
+and one rule pair in `nav.css` § 5:
+
+```css
+.nv-panel-inner { flex: 1 1 auto; width: 100%; min-width: 0; align-self: stretch }
+.nv-panel-inner:empty { display: none }
+```
+
+That is the whole change. No JS: `nav.js` only toggles `hidden` on a panel and
+reads `scrollHeight` off `.nv-panels` / `.nv-body`, so a component's height
+flows into the surface animation for free.
+
+## 16.2 Three decisions worth writing down
+
+**Styleless on purpose.** No padding, no background, no gap. The components
+bring all three, and a slot that contributed any of them would double up.
+
+**`:empty`, not a modifier class.** The slot ships in all six panels while only
+some are converted. `:empty` keeps an unused slot out of `.nv-panel`'s 32px gap,
+so a half-done port renders exactly as it did before. The cost is that the div
+is whitespace-sensitive — `<div class="nv-panel-inner"></div>` must stay written
+with nothing between the tags, `tools/regen.py` included. The alternative,
+`.nv-panel:has(.nv-panel-inner > *)`, is banned by the file's own contract.
+
+**`width:100%` + `align-self:stretch`, not `flex:1 1 100%`.** `.nv-panel` is a
+row on desktop and `flex-direction:column` at ≤1279. A 100% flex-basis means
+*height* in a column and would collapse the slot; a width does the right thing
+in both directions.
+
+## 16.3 Measured
+
+Stand-in component (full-width block, 48/40/40 padding, 528px tall) dropped into
+`#nv-panel-platform` with the hand-built siblings removed:
+
+| viewport | slot width | surface height | overflow |
+|---|---|---|---|
+| 1710 (desktop) | 1280 | 528 | 0 |
+| 1300 (compact row) | 1236 | 528 | 0 |
+| 1024 (tablet, 193px rail) | 767 | 542 | 0 |
+| 402 (mobile drawer) | 370 | 568 | 0 |
+
+Empty slots change nothing: platform still measures 588px and partners 320px,
+the same as before the slot existed.
+
+**The component has to be responsive.** It is drawn at 1280 and gets 1280 on
+desktop, but the tablet rail leaves it 767 and the mobile drawer `vw − 32`.
+Nothing in nav.css can fix that from outside.
+
+## 16.4 Still open
+
+`.nv-panel-wrap` in `nav.css` § 5 matches nothing in `nav.html` and has done
+since at least v1.2.1 — dead rule, safe to delete next time § 5 is touched.

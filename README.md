@@ -37,9 +37,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.3.1/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.4.0/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.3.1/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.4.0/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -88,6 +88,22 @@ data attributes, and those must survive the conversion:
 
 `data-nav-state` is written by JS and read by CSS to swap the hamburger / ✕ / back icons.
 `data-nav-icon` marks the ~30 icon tiles for the SVG swap that is still outstanding.
+
+### The component slot
+
+Every `.nv-panel` opens with an empty `<div class="nv-panel-inner"></div>`. That is where a Webflow
+component goes, so the mega-menu content stays editable in the Editor on a protected page and the
+navbar picks the change up everywhere. Drop the component in, then delete the hand-built siblings
+next to it.
+
+The slot is deliberately styleless — no padding, no background, no layout — because the components
+already carry their own. `nav.css` hides it with `:empty` while it is empty, so panels that have not
+been converted yet render exactly as before, and `nav.js` never reaches inside it: it measures the
+panel and animates the surface to whatever height the component turns out to be.
+
+One thing to watch: the components are drawn at 1280. The slot is 1280 on desktop, but the tablet
+rail leaves it **767px** and the mobile drawer **viewport − 32**, so the component has to be
+responsive on its own.
 
 Two more things Webflow must not undo:
 

@@ -1420,3 +1420,67 @@ the navbar's own rules. Curl the file instead.
 - `/book-a-demo` (Base): unchanged apart from § 17.3.
 - `embed.html` standalone, no Webflow variables present: all nineteen tokens
   fall back to their exact pre-v1.5.0 values.
+
+
+---
+
+# 18 · Matching the dark Figma frame exactly (v1.5.1)
+
+Done 2026-08-31. § 17 made the navbar flip; this makes it flip to the *drawn*
+colours. Source: `7Dm6a0NkHsli9Q8VTy4FAx` node **4423:6218** (`HyHorizontalMenu`,
+dark). Resolved variables on that frame:
+
+```
+Colors/Gray Alpha/4        #fdfdea19     <- bar fill
+Colors/Gray/4              #323232       <- 0 0 10px shadow
+Tokens/Colors/text-primary #ffffff
+Variables/Misc/Brand-font  #ffffff
+Colors/Accent/Accent/9     #8a68e9
+Tokens/Colors/accent-contrast #ffffff
+```
+
+Text, logo, button and label already matched § 17. Two did not.
+
+## 18.1 The bar fill — one token, two different Figma variables
+
+Figma draws the **light** bar with White Alpha 9 (70% white) and the **dark**
+bar with Gray Alpha 4 (`rgba(253,253,234,.1)`). Those are two separate
+variables, not one variable in two modes, so no single `var()` can follow both:
+
+| Webflow variable | Base | Dark (before) |
+|---|---|---|
+| `white-alpha-9` | rgba(255,255,255,.7) — the light bar | rgba(255,255,255,.7) — *unset, = base* |
+| `gray--alpha-4` | rgba(0,0,0,.09) | rgba(253,253,234,.1) — the dark bar |
+
+§ 17 dodged this with `effects-translucent` (60% white / `#1c1c1e99`), which
+flipped but matched neither frame and dropped the light bar from 70% to 60%.
+
+Fixed in Webflow rather than in CSS: **White Alpha 9's Dark value is now
+`rgba(253,253,234,.1)`**, so one variable carries both frames and
+`--nv-white-alpha-9` maps straight to it. Base returns to exactly 70% — the
+§ 17.3 regression is gone.
+
+That edit was safe because White Alpha 9 had *no* distinct Dark value: it was
+70% white on dark pages, which is wrong for anything using it. Any other
+dark-mode consumer improves too. It is still site-wide — worth knowing.
+
+## 18.2 The glow
+
+Same shape: Gray 4 was `#e8e8e8` in both modes, so § 17 borrowed Gray 3
+(`#d8d8d8 → #2c2c2c`) to get *a* flip. Figma actually wants `#323232`, so
+**Gray 4's Dark value is now `#323232`** and `--nv-gray-4` maps back to Gray 4.
+Base returns to exactly `#e8e8e8`; `.nv-split` follows for free.
+
+## 18.3 Login is not gone
+
+`I4423:6218;5531:23309` (the 92px Login button) is `hidden="true"` in this
+frame — hidden in the instance, not removed from the design. No structural
+change, and nav.html keeps it.
+
+## 18.4 Net effect on Base mode
+
+v1.5.0 shifted six base values (§ 17.3). v1.5.1 reverts the two that were
+visible: the bar is 70% white again and the glow is `#e8e8e8` again. What
+remains is the four imperceptible ones — alpha-11 `.933→.94`, text-heading
+`#1d1d21→#202020`, icon tile `#f0ebff→#f3f0ff`, hover `#7a55e4→#6c47c5`.
+Only the hover is arguably worth a variable of its own later.

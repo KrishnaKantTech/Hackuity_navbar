@@ -160,18 +160,19 @@
   /* active nav item — Accent Alpha 3, not Violet Alpha 3: only the accent
      ramp has a Dark value, and #3700ff1c is invisible on a dark ground. */
   --nv-violet-alpha-3: var(--_color---accent--alpha-3, rgba(55, 0, 255, .11));
-  /* the pill's glow and the panel divider. Gray 3, not Gray 4: Gray 4 is
-     #e8e8e8 in BOTH modes, which leaves a bright halo round a dark bar. Gray 3
-     flips (#d8d8d8 -> #2c2c2c); the base shift is invisible on a 10px blur and
-     a 1px hairline. */
-  --nv-gray-4: var(--_color---gray--gray-3, #e8e8e8);
+  /* the pill's glow and the panel divider. Figma's dark navbar (4423:6218)
+     draws the glow with Colors/Gray/4 at #323232, so Gray 4 was given that
+     Dark value in Webflow — base #e8e8e8 is untouched. */
+  --nv-gray-4: var(--_color---gray--gray-4, #e8e8e8);
   /* promo column ground */
   --nv-gray-alpha-2: var(--_color---gray--gray-alpha-2, rgba(0, 0, 0, .02));
   --nv-neutral-alpha-3: var(--_color---neutral--alpha-3, rgba(0, 0, 0, .06));
-  /* the bar pill itself — Effects/Translucent is the only translucent surface
-     with a Dark value (#1c1c1e99); White Alpha 9 stays white and would leave a
-     white bar on a dark page. */
-  --nv-white-alpha-9: var(--_color---effects-translucent, rgba(255, 255, 255, .698));
+  /* the bar pill itself. Figma draws the light bar with White Alpha 9 (70%
+     white) and the dark bar with Gray Alpha 4 (rgba(253,253,234,.1)) — two
+     different variables, which one token cannot follow. Resolved in Webflow
+     instead: White Alpha 9 now carries Gray Alpha 4's colour as its Dark
+     value, so both modes are exact and the light bar keeps its 70%. */
+  --nv-white-alpha-9: var(--_color---white-alpha-9, rgba(255, 255, 255, .698));
   --nv-text-primary: var(--_color---text-primary, #202020);
   --nv-text-heading: var(--_color---text-primary, #1d1d21);
   --nv-text-secondary: var(--_color---secondary, #646464);

@@ -37,9 +37,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.0/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.1/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.0/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.1/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -119,6 +119,10 @@ them on the component roots or dark mode silently stops working.
 
 Each is written `var(--_color---<name>, <figma-fallback>)`. The fallbacks are the original Figma
 values, so `embed.html`, `preview.html` and any non-Webflow host still render correctly.
+
+Two Webflow variables carry a Dark value that exists only for the navbar, taken from the dark Figma
+frame (`4423:6218`): **White Alpha 9** → `rgba(253,253,234,.1)` (the bar fill) and **Gray 4** →
+`#323232` (the pill glow and `.nv-split`). Both keep their original Base values. See NOTES.md § 18.
 
 Two colours are literal on purpose: `--nv-accent-contrast` (white label on Accent 9, which does not
 flip, so it must not either) and `--nv-scrim-bg` (a dark scrim reads right in both modes).

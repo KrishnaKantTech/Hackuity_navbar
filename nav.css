@@ -112,6 +112,25 @@
   --nv-ease: cubic-bezier(.4, 0, .2, 1);
   --nv-dur: 300ms;
 
+  /* panel swap — desktop only. The surface morphs its height with --nv-dur
+     while the OUTGOING panel fades and slides against the travel direction and
+     the INCOMING one slides in behind it. The in-delay is what makes them
+     overlap rather than queue: out runs 0-180, in runs 80-340.
+     nav.js reads --nv-swap-out-dur so the cleanup timer cannot drift from the
+     transition it is waiting on — change the number here, only here. */
+  --nv-swap-shift: 40px;
+  /* horizontal travel when moving between two heads. 24 read as a twitch on a
+     1280 panel — the eye needs roughly a card's worth of movement before it
+     registers as travel rather than a settle. Above ~56 the incoming column
+     starts arriving visibly clipped by .nv-panels' overflow. */
+  --nv-swap-rise: 8px;
+  /* vertical travel when the menu opens from closed */
+  --nv-swap-in-dur: 260ms;
+  --nv-swap-in-delay: 80ms;
+  --nv-swap-out-dur: 180ms;
+  --nv-swap-in-ease: cubic-bezier(.22, 1, .36, 1);
+  --nv-swap-out-ease: cubic-bezier(.4, 0, 1, 1);
+
   /* breakpoints — nav.js reads these, so they are declared in one place only.
      Unitless on purpose: JS parses the number. Media queries below must match. */
   --nv-bp-tablet: 1279;
@@ -580,6 +599,93 @@
 }
 
 
+/* ---------- panel swap (desktop) ----------
+   Hover one head, then another, and the panel does not blink: the old content
+   fades and slides out of the way while the new content slides in behind it,
+   and the surface morphs its height between the two.
+
+   How it holds together:
+
+   · The INCOMING panel stays in normal flow, so it — and only it — dictates
+     .nv-panels' height. The OUTGOING one is lifted to position:absolute, which
+     takes it out of flow, so the height animation is never a tug-of-war.
+   · Direction comes from `data-nav-swap` on .nv-panels, written by nav.js from
+     the two heads' positions in the link row: `next` = moved right, `prev` =
+     moved left, plus `open`/`close` for the first and last step. One attribute
+     drives both halves, so the two panels can never travel the same way.
+   · The start states are separate classes (.nv-is-enter / .nv-is-out) that
+     nav.js applies a frame apart. The base state below is the resting state,
+     which is what both panels transition TOWARD or AWAY FROM.
+
+   Base `transform` stays `none`, not `translate3d(0,0,0)`: a permanent
+   transform makes the panel a containing block for fixed/absolute descendants,
+   and .nv-panel-inner holds a Webflow component whose internals we do not own.
+   Nothing here reaches inside that slot — the whole effect is applied to
+   .nv-panel, the wrapper this file owns. */
+.nv-panel {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--nv-swap-in-dur) var(--nv-swap-in-ease) var(--nv-swap-in-delay),
+    transform var(--nv-swap-in-dur) var(--nv-swap-in-ease) var(--nv-swap-in-delay);
+}
+
+/* start of the enter — committed with `transition:none` so it lands in one
+   frame instead of animating INTO the offset it is about to animate out of */
+.nv-panel.nv-is-enter {
+  opacity: 0;
+  transition: none;
+}
+
+.nv-panels[data-nav-swap="next"] > .nv-panel.nv-is-enter {
+  transform: translate3d(var(--nv-swap-shift), 0, 0)
+}
+
+.nv-panels[data-nav-swap="prev"] > .nv-panel.nv-is-enter {
+  transform: translate3d(calc(var(--nv-swap-shift) * -1), 0, 0)
+}
+
+/* opening from closed reads as an unfold, not a sideways swipe */
+.nv-panels[data-nav-swap="open"] > .nv-panel.nv-is-enter {
+  transform: translate3d(0, calc(var(--nv-swap-rise) * -1), 0)
+}
+
+/* the outgoing panel, parked out of flow for the length of its fade.
+   max-height + overflow keep it from lengthening .nv-panels' scroll area while
+   the surface shrinks under it; pointer-events stop it from swallowing a hover
+   aimed at the panel arriving underneath. */
+.nv-panel.nv-is-leave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  max-height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--nv-swap-out-dur) var(--nv-swap-out-ease),
+    transform var(--nv-swap-out-dur) var(--nv-swap-out-ease);
+}
+
+.nv-panel.nv-is-leave.nv-is-out {
+  opacity: 0
+}
+
+.nv-panels[data-nav-swap="next"] > .nv-panel.nv-is-leave.nv-is-out {
+  transform: translate3d(calc(var(--nv-swap-shift) * -1), 0, 0)
+}
+
+.nv-panels[data-nav-swap="prev"] > .nv-panel.nv-is-leave.nv-is-out {
+  transform: translate3d(var(--nv-swap-shift), 0, 0)
+}
+
+/* closing: the surface collapsing is the movement. A slide on top of it just
+   fights the height transition, so the last panel only fades. */
+.nv-panels[data-nav-swap="close"] > .nv-panel.nv-is-leave.nv-is-out {
+  transform: none
+}
+
+
 /* ---------- Webflow component slot ----------
    `.nv-panel-inner` is the one place Webflow owns. A component dropped in here
    keeps the mega-menu content editable in the Editor, on a protected page,
@@ -1006,7 +1112,20 @@ a.nv-card:hover {
   /* mega-menu on the left */
   .nv-panel {
     flex-direction: column;
-    gap: 0
+    gap: 0;
+    /* the desktop swap does not run here — the rail and the drilldown own the
+       switch. Resetting rather than trusting nav.js keeps a panel from being
+       stranded mid-fade when the viewport crosses 1280 during one. */
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .nv-panel.nv-is-leave {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    pointer-events: auto;
   }
 
   .nv-promo {
@@ -1248,5 +1367,9 @@ a.nv-card:hover {
   .nv-logo--standalone {
     transition-duration: .001ms !important;
     animation-duration: .001ms !important;
+    /* --nv-swap-in-delay would otherwise survive the duration reset and leave
+       an 80ms hole between the two panels */
+    transition-delay: 0ms !important;
+    animation-delay: 0ms !important;
   }
 }

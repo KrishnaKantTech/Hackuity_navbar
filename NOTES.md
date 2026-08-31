@@ -1484,3 +1484,110 @@ visible: the bar is 70% white again and the glow is `#e8e8e8` again. What
 remains is the four imperceptible ones — alpha-11 `.933→.94`, text-heading
 `#1d1d21→#202020`, icon tile `#f0ebff→#f3f0ff`, hover `#7a55e4→#6c47c5`.
 Only the hover is arguably worth a variable of its own later.
+
+
+---
+
+# 19 · The desktop panel crossfade (v1.6.0)
+
+Done 2026-08-31. Reference: finsweet.com, whose mega-menu tab switch fades and
+slides the old content out while the new slides in. Their build is GSAP 3.15
+driving a class toggle on `.nv-dropdown-pane` equivalents. Ours is CSS —
+`.nv-panel` already had a JS-owned show/hide, so the whole effect is two extra
+states on it and one attribute above it. No library.
+
+## 19.1 Why the outgoing panel leaves the flow
+
+The height morph and the crossfade want opposite things. The morph needs
+`.nv-panels` to size to *one* panel; the crossfade needs *two* on screen. The
+resolution: the incoming panel stays in normal flow and is the only thing that
+dictates height, and the outgoing one is lifted to `position:absolute` for the
+length of its fade, where it costs the layout nothing.
+
+That broke `applyHeight()` in a way worth remembering. It measured
+`node.scrollHeight`, and **an absolutely positioned child still counts toward
+scrollHeight** — so mid-swap it returned the taller of the two panels and a
+swap onto a shorter panel never shrank. Desktop now measures the active
+panel's own box instead:
+
+```js
+if (mode() === 'desktop' && activePanel) {
+  var live = panelByKey(activePanel);
+  if (live) want = Math.ceil(live.getBoundingClientRect().height) || want;
+}
+```
+
+`.nv-panels` carries no padding and `.nv-panel` no margin, so container height
+== panel height, exactly. `getBoundingClientRect` over `offsetHeight` for the
+sub-pixel: the swap only ever *translates* a panel, and translation does not
+change a measured height. Tablet and mobile still measure the container —
+their sizer is `.nv-body`, which holds the link list too, and no leaver ever
+exists below 1280.
+
+## 19.2 Direction comes from the DOM, not from a table
+
+`data-nav-swap` on `.nv-panels` is `next` / `prev` / `open` / `close`, derived
+from the two heads' index in `items` — which is DOM order, which is the visual
+order of the link row. Reorder the row in Webflow and the animation reorders
+with it. One attribute drives both halves, so the two panels can never be
+written to travel the same way.
+
+`open` and `close` are deliberately not sideways. Opening from closed unfolds
+8px vertically (`--nv-swap-rise`); closing only fades, because the surface
+collapsing already *is* the movement and a slide on top of it fights the
+height transition.
+
+## 19.3 The overlap is a delay, not a shorter duration
+
+Out runs 0–180ms, in runs 80–340ms. The 80ms `--nv-swap-in-delay` is the whole
+effect: without it the two are simultaneous and the panel reads as a
+dissolve; with it the old content is already leaving before the new arrives.
+Measured live at the crossover, both sit near 50% opacity ~24px apart moving
+in opposite directions.
+
+`--nv-swap-shift` was 24px on the first pass and read as a twitch on a 1280
+panel. 40px. The ceiling is roughly 56px — past that the incoming right-hand
+column arrives visibly clipped by `.nv-panels`' `overflow:hidden`.
+
+## 19.4 Two classes, one frame apart
+
+`.nv-is-enter` carries `transition:none` so the start state lands in a single
+frame instead of animating *into* the offset it is about to animate out of.
+`void p.offsetWidth` commits it — without that forced reflow there is no
+before-change style and the browser coalesces both writes into no transition
+at all. Same dance for `.nv-is-leave` → `.nv-is-out`.
+
+## 19.5 The leaver has to be reclaimable
+
+Cleanup is a timer, `--nv-swap-out-dur` + 120ms grace, and **nav.js reads that
+token from the CSS** (`cssMs()`) rather than carrying a copy — the same trick
+`--nv-bp-tablet` already uses for the breakpoints. Retune the CSS and the
+timer follows.
+
+`finalizeLeaver()` sets `hidden` against the *current* selection, not against
+what was leaving, so a panel re-hovered mid-fade comes back visible instead of
+hiding itself. Only one leaver is allowed at a time: hover intent already
+rate-limits switching to 90ms, and three half-faded panels stacked up read as
+mud.
+
+`setPanel(key, instant)` gained the second argument for one caller — the
+breakpoint-crossing branch of the resize handler. Animating a panel the
+viewport is about to restyle is pointless and can strand it mid-fade. The
+tablet block also resets `opacity` / `transform` / `transition` on `.nv-panel`
+rather than trusting the script to have cleaned up.
+
+## 19.6 The component slot is carried, never touched
+
+Everything is applied to `.nv-panel`. Nothing reaches inside `.nv-panel-inner`
+(§ 14), so a Webflow component dropped in that slot inherits the crossfade for
+free and the height still measures off the live content. Verified with the
+slot filled: 504px measured, 504px set, nothing clipped.
+
+## 19.7 Verified
+
+Desktop 1500px — direction correct both ways, height morphs 588↔112,
+A→C→E→A thrash leaves zero stray classes. Tablet 1000px and mobile — no
+`data-nav-swap` written, instant switch, rail and drilldown unchanged.
+Crossing 1280 *mid-swap* with the duration stretched to 20s: cleans to zero
+strays and the drawer still works. No console errors.
+

@@ -37,9 +37,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.1/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.6.0/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.5.1/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.6.0/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -88,6 +88,39 @@ data attributes, and those must survive the conversion:
 
 `data-nav-state` is written by JS and read by CSS to swap the hamburger / ✕ / back icons.
 `data-nav-icon` marks the ~30 icon tiles for the SVG swap that is still outstanding.
+`data-nav-swap` is written by JS onto `data-nav-el="panels"` and read by CSS to
+point the desktop panel crossfade — see below.
+
+### The desktop panel crossfade
+
+Moving from one head to another on desktop does not blink between panels. The
+outgoing one lifts out of flow and fades away against the direction of travel;
+the incoming one slides in behind it; `.nv-panels` morphs its height between
+the two. Below 1280 nothing changes — the tablet rail and the mobile drilldown
+still switch outright.
+
+`nav.js` owns only the choreography. It writes one attribute and toggles three
+classes; every offset, duration and easing is a token in `nav.css`:
+
+| Token | Default | |
+|---|---|---|
+| `--nv-swap-shift` | `40px` | horizontal travel between two heads. Above ~56px the incoming column arrives visibly clipped by `.nv-panels`' overflow |
+| `--nv-swap-rise` | `8px` | vertical travel when the menu opens from closed |
+| `--nv-swap-in-dur` | `260ms` | incoming panel |
+| `--nv-swap-in-delay` | `80ms` | what makes the two overlap instead of queue |
+| `--nv-swap-out-dur` | `180ms` | outgoing panel — **`nav.js` reads this one** for its cleanup timer, so it cannot drift |
+| `--nv-swap-in-ease` | `cubic-bezier(.22, 1, .36, 1)` | |
+| `--nv-swap-out-ease` | `cubic-bezier(.4, 0, 1, 1)` | |
+
+`data-nav-swap` on `.nv-panels` is `next` (moved right along the link row),
+`prev` (moved left), `open` (from closed) or `close`. The direction comes from
+the two heads' positions in the DOM, so reordering the link row in Webflow
+reorders the animation with it — nothing to keep in sync.
+
+The effect is applied to `.nv-panel`, never to `.nv-panel-inner`. A Webflow
+component in that slot is animated by being carried, so swapping it in the
+Editor inherits the crossfade for free, and the height still measures off the
+live content.
 
 ### The component slot
 

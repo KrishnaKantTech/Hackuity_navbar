@@ -10,7 +10,12 @@
    the active panel's height, so switching heads morphs the mega-menu rather
    than closing and reopening it.
 
-     desktop (>1279)  hover / click a head -> panel surface grows to that panel
+     desktop (>1279)  hover / click a head -> panel surface grows to that panel,
+                      and moving between two heads crossfades them: the old
+                      panel fades out against the direction of travel while the
+                      new one slides in. Timings and offsets are nav.css tokens
+                      (--nv-swap-*); this file only writes `data-nav-swap` on
+                      .nv-panels and toggles the three state classes.
      tablet  (<=1279) Menu -> Close; 193px rail on the RIGHT switches panels
      mobile  (<=767)  Menu -> list; tap a head -> that panel replaces the list,
                       and the button becomes a back chevron
@@ -24,7 +29,8 @@
      data-nav-el="shell"            stacking wrapper inside it
      data-nav-el="bar"              the fixed-height pill (measured, not styled)
      data-nav-el="body"             the growing/drawer surface
-     data-nav-el="panels"           the panel stack
+     data-nav-el="panels"           the panel stack (nav.js writes
+                                    data-nav-swap="next|prev|open|close" here)
      data-nav-el="panel"            one mega-menu   + data-nav-panel="<key>"
      data-nav-el="menu"             the link list   (div, role="list")
      data-nav-el="item"             one row         + data-nav-panel="<key>"
@@ -48,7 +54,10 @@
     active:     'nv-is-active',
     drilled:    'nv-is-drilled',
     scrollable: 'nv-is-scrollable',
-    scrolled:   'nv-is-scrolled'
+    scrolled:   'nv-is-scrolled',
+    enter:      'nv-is-enter',    /* incoming panel, start state */
+    leave:      'nv-is-leave',    /* outgoing panel, parked out of flow */
+    out:        'nv-is-out'       /* outgoing panel, end state */
   };
 
   var HOVER_IN  = 90;    /* hover intent before a desktop panel opens */
@@ -95,6 +104,16 @@
     var w = window.innerWidth;
     if (w > cssNum('--nv-bp-tablet', 1279)) return 'desktop';
     return w > cssNum('--nv-bp-mobile', 767) ? 'tablet' : 'mobile';
+  }
+
+  /* Durations live in nav.css too. The swap's cleanup timer has to outlast the
+     transition it is waiting on, so it reads the same token rather than
+     carrying a copy that would silently drift the day the CSS is retuned. */
+  function cssMs(name, fallback) {
+    var raw = getComputedStyle(root).getPropertyValue(name).trim();
+    var n = parseFloat(raw);
+    if (isNaN(n)) return fallback;
+    return /ms$/.test(raw) ? n : n * 1000;
   }
 
   /* Which element carries the animated height, and which one actually scrolls.
@@ -164,7 +183,19 @@
       return;
     }
 
+    /* An absolutely positioned child still counts toward scrollHeight, so
+       while the outgoing panel is parked mid-fade, measuring .nv-panels would
+       return the TALLER of the two panels and a shrinking swap would never
+       shrink. The incoming panel's own layout box is the honest number —
+       .nv-panels carries no padding and .nv-panel no margin, so the two are
+       the same. getBoundingClientRect over offsetHeight for the sub-pixel:
+       the swap only ever translates a panel, and translation does not change
+       a box's measured height. */
     var want = naturalHeight(node);    /* measured only after the reset above */
+    if (mode() === 'desktop' && activePanel) {
+      var live = panelByKey(activePanel);
+      if (live) want = Math.ceil(live.getBoundingClientRect().height) || want;
+    }
     var cap  = maxHeight();
 
     sc.classList.toggle(CLS.scrollable, want > cap);
@@ -172,13 +203,112 @@
     sc.scrollTop = 0;                  /* every panel switch starts at the top */
   }
 
-  /* ---------- panels ---------- */
-  function setPanel(key) {
-    activePanel = key;
+  /* ---------- panel swap (desktop) ----------
+     Hovering from one head to the next crossfades the two panels instead of
+     blinking between them: the outgoing one lifts out of flow and fades away
+     against the direction of travel while the incoming one slides in behind
+     it, and .nv-panels morphs its height between the two.
+
+     nav.js owns only the choreography — every offset, duration and easing is a
+     token in nav.css. It writes `data-nav-swap` on .nv-panels (next / prev /
+     open / close) and toggles three classes; the CSS decides what those mean.
+
+     Nothing here reaches inside `.nv-panel-inner`. The Webflow component in
+     that slot is animated by being carried, never by being touched, so a
+     component swapped in the Editor inherits the effect for free. */
+  var byKey = {};
+  panels.forEach(function (p) { byKey[p.getAttribute('data-nav-panel')] = p; });
+
+  var order = {};
+  items.forEach(function (li, i) { order[li.getAttribute('data-nav-panel')] = i; });
+
+  var leavers = [];
+  var SWAP_TAIL = 120;               /* grace on top of the CSS out-duration */
+
+  function panelByKey(k) { return k ? (byKey[k] || null) : null; }
+
+  /* Put a leaver back in the deck. `hidden` is decided against the CURRENT
+     selection, not against what was leaving, so a panel re-hovered mid-fade
+     comes back visible rather than being hidden out from under itself. */
+  function finalizeLeaver(p) {
+    clearTimeout(p._nvLeaveTimer);
+    p._nvLeaveTimer = null;
+    p.classList.remove(CLS.leave, CLS.out);
+    p.hidden = p.getAttribute('data-nav-panel') !== activePanel;
+    var i = leavers.indexOf(p);
+    if (i > -1) leavers.splice(i, 1);
+  }
+
+  function finalizeLeavers() {
+    leavers.slice().forEach(finalizeLeaver);
+  }
+
+  function startLeave(p) {
+    p.hidden = false;
+    p.classList.remove(CLS.enter);
+    p.classList.add(CLS.leave);      /* out of flow, still at rest */
+    void p.offsetWidth;              /* commit that, so the next line animates */
+    p.classList.add(CLS.out);
+    leavers.push(p);
+    p._nvLeaveTimer = setTimeout(function () { finalizeLeaver(p); },
+                                 cssMs('--nv-swap-out-dur', 180) + SWAP_TAIL);
+  }
+
+  function startEnter(p) {
+    p.hidden = false;
+    p.classList.remove(CLS.leave, CLS.out);
+    p.classList.add(CLS.enter);      /* faded + offset, transition suppressed */
+    void p.offsetWidth;              /* commit it — without this there is no
+                                        before-change style to animate from */
+    requestAnimationFrame(function () { p.classList.remove(CLS.enter); });
+  }
+
+  function swapPanels(prev, next) {
+    if (prev === next) {             /* re-hovering the open head is not a swap */
+      var same = panelByKey(next);
+      if (same) same.hidden = false;
+      return;
+    }
+
+    /* One leaver at a time. Hover intent already rate-limits switching to
+       90ms, and letting three half-faded panels stack up reads as mud. */
+    finalizeLeavers();
+
+    var dir = 'open';
+    if (prev && next) dir = (order[next] > order[prev]) ? 'next' : 'prev';
+    else if (prev)    dir = 'close';
+    panelsEl.setAttribute('data-nav-swap', dir);
+
+    var out = panelByKey(prev);
+    if (out) startLeave(out);
 
     panels.forEach(function (p) {
-      p.hidden = p.getAttribute('data-nav-panel') !== key;
+      if (p === out) return;         /* the leaver stays on screen to fade */
+      p.hidden = p.getAttribute('data-nav-panel') !== next;
     });
+
+    var into = panelByKey(next);
+    if (into) startEnter(into);
+  }
+
+  /* ---------- panels ---------- */
+  function setPanel(key, instant) {
+    var prev = activePanel;
+    activePanel = key;
+
+    /* Desktop crossfades. Tablet and mobile switch outright — the rail and the
+       drilldown are unchanged. `instant` is the breakpoint-crossing escape
+       hatch: animating a panel the viewport is about to restyle is pointless
+       and can strand it mid-fade. */
+    if (!instant && mode() === 'desktop') {
+      swapPanels(prev, key);
+    } else {
+      finalizeLeavers();
+      panelsEl.removeAttribute('data-nav-swap');
+      panels.forEach(function (p) {
+        p.hidden = p.getAttribute('data-nav-panel') !== key;
+      });
+    }
 
     items.forEach(function (li) {
       var on = li.getAttribute('data-nav-panel') === key;
@@ -352,7 +482,8 @@
         if (scrim) { scrim.classList.remove(CLS.open); scrim.hidden = true; }
         unlockScroll();
         trapFocus(false);
-        setPanel(null);
+        setPanel(null, true);          /* instant: the swap is about to be
+                                          restyled out from under itself */
       } else {
         applyHeight();                 /* content or viewport reflowed */
       }

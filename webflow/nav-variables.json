@@ -1,0 +1,43 @@
+{
+  "_note": "Step 1 of the CSS->Webflow port. Maps nav.css :root tokens to the Webflow 'Nav' variable collection. Base mode carries the TABLET (<=1279) values on purpose — Webflow only has min-width tiers above main, so the desktop cascade is inverted into the Desktop/Wide modes.",
+  "siteId": "6a86e5704d6ac142825f147a",
+  "collectionId": "collection-5e7e5689-b7f2-82cd-5100-850d53d2e370",
+  "modes": {
+    "base":    { "id": "base",                                    "breakpoint": "main",  "covers": "all widths / 768-1279 in practice" },
+    "Desktop": { "id": "mode-933f3951-2207-ba6a-33fa-8adfb89df55f", "breakpoint": "large", "covers": ">=1280" },
+    "Wide":    { "id": "mode-e36bcbfc-33cd-1a63-6fb4-8459bf2a6621", "breakpoint": "xl",    "covers": ">=1440" },
+    "Mobile":  { "id": "mode-bd62afe8-437e-dab2-981a-3e751342d32c", "breakpoint": "small", "covers": "<=767" }
+  },
+  "variables": {
+    "--nv-space-1":      { "id": "variable-5ef2c9c2-9695-345b-8ca7-43bbab853368", "css": "--_nav---space-1",      "base": "4px" },
+    "--nv-space-2":      { "id": "variable-3d7feaff-49be-2497-8a52-7f788cc387d2", "css": "--_nav---space-2",      "base": "8px" },
+    "--nv-space-3":      { "id": "variable-0d792f4c-1069-d136-7c97-4c5f36b91c9c", "css": "--_nav---space-3",      "base": "12px" },
+    "--nv-space-4":      { "id": "variable-d16976e2-7535-af31-f592-83d5601a1ab7", "css": "--_nav---space-4",      "base": "16px" },
+    "--nv-space-5":      { "id": "variable-3e028941-3e42-cb58-f718-6f3fc46fb08d", "css": "--_nav---space-5",      "base": "24px" },
+    "--nv-space-6":      { "id": "variable-12a1f0c7-776c-75b6-ce0b-7239459e4146", "css": "--_nav---space-6",      "base": "32px" },
+    "--nv-space-7":      { "id": "variable-f809670f-9a09-5394-d4cc-1eef7cf4be4d", "css": "--_nav---space-7",      "base": "40px" },
+    "--nv-space-8":      { "id": "variable-8b8d3fe7-d5a0-8025-c39a-f25372daa78c", "css": "--_nav---space-8",      "base": "48px" },
+    "--nv-space-10":     { "id": "variable-f7e9bbee-11c5-c12f-57e5-41a87ee2c12d", "css": "--_nav---space-10",     "base": "80px" },
+    "--nv-radius-5":     { "id": "variable-87fa7bc6-65aa-93be-6f20-2831a6e8b802", "css": "--_nav---radius-5",     "base": "12px" },
+    "--nv-radius-6":     { "id": "variable-9e0ab233-7d32-885d-2bef-5798e483f4db", "css": "--_nav---radius-6",     "base": "16px" },
+    "--nv-radius-6-max": { "id": "variable-1a4a2955-59eb-1870-05b4-8d60da3bd09f", "css": "--_nav---radius-6-max", "base": "24px" },
+    "--nv-radius-full":  { "id": "variable-f2b7e2e6-fb0e-8b05-5b41-df3d131f8cef", "css": "--_nav---radius-full",  "base": "9999px" },
+    "--nv-button-h":     { "id": "variable-3ad713de-be18-c257-df30-c8ca989bd94c", "css": "--_nav---button-h",     "base": "48px" },
+    "--nv-bar-h":        { "id": "variable-6a468663-9ac8-dd78-1026-be0aa9952c49", "css": "--_nav---bar-h",        "base": "80px", "Desktop": "74px", "Wide": "74px", "Mobile": "80px" },
+    "--nv-bar-top":      { "id": "variable-f3e5ca4f-3866-df5b-3f3e-d2ae110cf9c0", "css": "--_nav---bar-top",      "base": "40px" },
+    "--nv-container-max":{ "id": "variable-5672eae8-061b-13a7-6ff6-20f94809ba93", "css": "--_nav---container-max","base": "1280px" },
+    "--nv-container-pad":{ "id": "variable-bece6fe6-673d-7009-9cd6-70a6c0202383", "css": "--_nav---container-pad","base": "32px", "Desktop": "32px", "Wide": "32px", "Mobile": "16px" },
+    "--nv-panel-tuck":   { "id": "variable-8da89c9e-9273-8f4c-7a8e-819d09a3eb79", "css": "--_nav---panel-tuck",   "base": "22px", "Desktop": "20px", "Wide": "20px", "Mobile": "24px" },
+    "--nv-rail-w":       { "id": "variable-db8f2cc4-7227-b435-21a0-73a9b4c332d2", "css": "--_nav---rail-w",       "base": "193px" },
+    "--nv-menu-left":    { "id": "variable-c873ef6c-1554-640e-20dd-a623702a4c3c", "css": "--_nav---menu-left",    "base": "223.535px" },
+    "--nv-link-pad":     { "id": "variable-ff69bf12-0c8e-315f-347c-d66105cf372a", "css": "--_nav---link-pad",     "base": "24px", "Desktop": "12px", "Wide": "16px", "Mobile": "24px" },
+    "--nv-blur":         { "id": "variable-13967fed-9a3c-5cee-6c20-68ba80461588", "css": "--_nav---blur",         "base": "20px" },
+    "--nv-font":         { "id": "variable-0fc3e7e3-bc11-bf0b-38d3-4a0096e78cf9", "css": "--_nav---font",         "base": "Aeonik, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }
+  },
+  "not_ported": {
+    "--nv-dur, --nv-ease, --nv-swap-*": "no Webflow variable type for ms or cubic-bezier; transitions stay in nav.css",
+    "--nv-bp-tablet, --nv-bp-mobile": "nav.js reads these unitless from computed style; must stay in nav.css",
+    "colour tokens (--nv-accent-*, --nv-text-*, --nv-surface, ...)": "already aliases of the Color collection; step 2 binds Color variables directly to properties",
+    "--nv-shadow, --nv-accent-contrast, --nv-scrim-bg": "composite or deliberately literal; stay in nav.css"
+  }
+}

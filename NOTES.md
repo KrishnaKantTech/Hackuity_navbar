@@ -1591,3 +1591,213 @@ A→C→E→A thrash leaves zero stray classes. Tablet 1000px and mobile — no
 Crossing 1280 *mid-swap* with the duration stretched to 20s: cleans to zero
 strays and the drawer still works. No console errors.
 
+
+
+# 20 · The desktop-up flip (v1.7.0)
+
+## 20.1 Why
+
+The CSS was moving into Webflow's Style panel, so `nav.css` and the Designer had
+to be able to hold the same rules. They could not, because of one mismatch —
+and it was **direction, not value**.
+
+The numbers already lined up exactly. `max-width:1279px` and `min-width:1280px`
+are the same boundary; so are `max-width:1439px` and `min-width:1440px`. There
+was nothing to renumber.
+
+But Webflow's tiers above `main` only run **upward** — `large` (≥1280), `xl`
+(≥1440), `xxl` (≥1920) — while its downward tiers are `medium` (≤991), `small`
+(≤767), `tiny` (≤479). There is **no max-width tier between 992 and 1279**. A
+`@media (max-width:1279px)` block therefore has nowhere to land in the Designer.
+
+Two ways out:
+
+| | |
+|---|---|
+| Invert inside Webflow only | Base mode holds tablet values; `nav.css` keeps saying the opposite. Two shapes to hold in your head, and every one of the ~111 rules ported by hand has to be flipped mentally on the way in. |
+| **Flip `nav.css` too** | One shape. Base = collapsed, desktop is an override. Chosen. |
+
+## 20.2 What moved
+
+Base is now the **collapsed** layout. Section 6 (`min-width:1280px`) is the
+horizontal desktop row; section 6b (`min-width:1440px`) restores 16px link
+padding. Sections 7 (≤767) and 8 (≤479) did not move — they already matched
+Webflow's `small` and `tiny`, and they still inherit from the base above them.
+
+Only **37 declarations** actually differed between desktop and tablet; those
+moved up into section 6. The other 93 base declarations were already universal
+and stayed exactly where they were.
+
+Section 6 also carries **83 explicit resets to initial values** — `width:auto`,
+`flex-direction:row`, `justify-content:normal`, `display:block` and friends.
+None of them change anything: they restore the value a property already had
+when it was simply never declared. They exist because an override tier has to
+say "back to default" out loud, where a base tier could just stay silent.
+
+## 20.3 nav.js did not change
+
+`nav.js` switches on `w > 1279 → desktop` and `w > 767 → tablet`. Those are the
+exact complements of `min-width:1280px` and `max-width:767px`, so the script and
+the media queries still cannot drift. `--nv-bp-tablet` / `--nv-bp-mobile` keep
+their values, and the token comment now spells the pairing out.
+
+## 20.4 Proved, not eyeballed
+
+`tools/cascade.py` resolves the whole file to a per-selector declaration map at
+16 viewport widths (375 … 1920), with real specificity ordering, shorthand
+expansion, and combinator matching — so `.nv-promo+.nv-groups` is correctly
+scored against `.nv-groups` rather than treated as an unrelated key.
+
+Run it on the old file and the new one and diff:
+
+```
+declaration comparisons across 16 widths : 17648
+identical                                : 17150
+explicit resets to the initial value     :   498
+REAL BEHAVIOUR DIFFS                     :     0
+```
+
+## 20.5 The one bug it surfaced
+
+The old tablet block wrote `.nv-groups, .nv-promo+.nv-groups` as a single
+selector. That handed the promo-adjacent groups `(0,2,0)` specificity — enough
+to outrank the plain `.nv-groups` rule in the **mobile** block, which is only
+`(0,1,0)`. So on mobile, the one panel that has a promo (Platform) kept 48/40/40
+padding and a 40px gap while the other five sat at 24.
+
+That reads like an accident, not a decision. But the flip was meant to change
+nothing, so it is **preserved** — as an explicit `.nv-promo+.nv-groups` rule at
+the bottom of section 7, with a comment saying to delete it to make mobile
+uniform. Deciding that is a separate change from this one.
+
+
+# 21 · Moving the look into the Webflow Style panel (v1.7.0)
+
+## 21.1 What moved
+
+93 rules — 481 declarations across 53 styles, at `main` / `large` / `small` —
+now live in the Style panel, with spacing, radius, sizing, type and colour
+**bound to variables** (the `Nav` collection from § 20, and the existing
+`Color` collection) rather than baked in as literals. `nav.css` went from 1458
+lines to 822.
+
+`nav.css` keeps everything the panel cannot express:
+
+| stays | why |
+|---|---|
+| component baseline (§ 2) | must load AFTER Webflow's normalize — that is its whole job |
+| `[data-nav-swap]`, `[data-nav-state]`, `[hidden]` | no attribute selectors in the panel |
+| `nv-is-*` combos, `a.nv-card:hover`, `.nv-promo+.nv-groups` | no state combos, tag or sibling selectors |
+| `.nv-panel--thirds .nv-groups` and friends | no descendant selectors |
+| transitions | durations and easings are `--nv-*` tokens Webflow has no type for |
+| `--nv-shadow`, `backdrop-filter`, `grid-template-areas` | composite alias / prefixed / not in the panel |
+| `@font-face`, `prefers-reduced-motion` | not expressible at all |
+
+`.nv-scrim` had no Webflow style to write into, so it stays whole.
+`.nv-panel-wrap` turned out to be dead — zero occurrences in `nav.html` — and
+was deleted.
+
+## 21.2 Three Webflow MCP quirks
+
+Each returns a bare `An internal error occurred`, so each cost a bisect:
+
+| sent | what Webflow wants |
+|---|---|
+| `background` + a colour variable | `background-color` — the shorthand hard-errors on a variable |
+| `gap` / `row-gap` / `column-gap` + a size variable | `grid-row-gap` / `grid-column-gap`, the legacy spelling |
+| `border-radius` with differing corners | the four corner longhands |
+
+Also: a batch does **not** stop on the first error. Later actions still run, so
+failures are per-action and a partial batch is normal.
+
+## 21.3 The load-order trap, which is the whole difficulty
+
+`nav.css` loads AFTER Webflow's stylesheet. So anything left behind in
+`nav.css` **wins** over the panel at equal specificity. Three ways that bites,
+all found by verification rather than by reading:
+
+1. **The baseline clobbers the panel.** § 2 still sets `padding:0` on
+   `.nv-link` / `.nv-menu-btn` and on the `.nv-menu` `<ul>`. Once the real
+   padding moved to Webflow it sat in an *earlier* sheet and lost. Those
+   properties had to stay.
+2. **Shorthands reset longhands they never name.** `font: inherit` in § 2 wipes
+   `font-size`, `line-height` and `font-weight`. Comparing property names alone
+   misses this completely — it showed up only as 508 wrong computed values in a
+   browser diff.
+3. **A property's tiers cannot be split.** `.nv-body`'s base
+   `grid-template-columns` had to stay (composite token value), so its `large`
+   override could not go either: a media query adds no specificity, so the base
+   in the later sheet would win at every width.
+
+The rule that falls out: **a property moves to Webflow only if every tier of it
+moves, and only if nothing left in `nav.css` re-declares it at equal or higher
+specificity.** A combo (`.nv-btn.nv-btn--ghost`, 0-2-0) or a pseudo
+(`.nv-link:hover`) outranks § 2's bare class, so those are safe and stayed.
+
+## 21.4 The tooling, and why it is worth keeping
+
+Four scripts that only make sense together:
+
+```
+tools/build_import.py     nav.css            -> webflow/import-plan.json
+tools/strip_imported.py   the plan           -> rewrites nav.css
+tools/emit_webflow_css.py the plan           -> nav-panel.css
+tools/verify_flip.py      two stylesheets    -> real-cascade diff over nav.html
+```
+
+`strip_imported` and `emit_webflow_css` **read the plan** rather than
+recomputing it. The first version recomputed, drifted from what was actually
+imported, and produced exactly the § 21.3 breakages. That is the single most
+important property of this pipeline: one source of truth for what moved.
+
+## 21.5 Verified twice, two different ways
+
+`verify_flip.py` resolves both stylesheets over the real element tree from
+`nav.html` — 1204 elements including runtime `nv-is-*` and `data-nav-swap`
+variants — at 16 widths, with true specificity ordering:
+
+```
+declaration comparisons : 353600
+REAL BEHAVIOUR DIFFS    :      0
+```
+
+Then the same claim in a real browser: `__cmp.html` iframes `embed.html`
+(new split) against `embed.orig.html` (pre-split) at 1600/1350/1100/900/600/400
+and diffs 55 computed properties on all 141 `nv-` elements:
+
+```
+comparisons : 46530
+DIFFS       :     0
+```
+
+The browser pass is not redundant — it is what caught § 21.3 case 2, which the
+simulator was blind to until it learned that `font` is a resetting shorthand.
+
+## 21.6 Tokens still duplicated
+
+Eleven are declared in `nav.css` AND in the Webflow `Nav` collection, because
+rules on both sides use them: `--nv-bar-h`, `--nv-blur`, `--nv-font`,
+`--nv-link-pad`, `--nv-panel-tuck`, `--nv-radius-6`, `--nv-rail-w`,
+`--nv-space-5`, `--nv-space-7`, `--nv-space-8`, `--nv-space-10`. Change one,
+change the other.
+
+The remaining `:root` tokens are no longer read by `nav.css`; they are kept so
+`nav-panel.css` resolves when previewing standalone. A cleaner fix, not done
+here, is to have `nav.css` read Webflow's own variables with the current value
+as fallback — `--nv-panel-tuck: var(--_nav---panel-tuck, 22px)` — the same
+trick § 1b already uses for colour. It needs checking that Webflow emits its
+breakpoint variable modes on `:root` and not on a wrapper class.
+
+## 21.7 Publish order
+
+`nav.css` v1.7.0 must not go live before the Webflow styles do:
+
+1. commit, tag **v1.7.0**, push — nothing changes yet, the site still loads v1.6.0
+2. publish Webflow — the panel styles go live but v1.6.0 still overrides them,
+   so the site looks identical
+3. point the custom-code `<link>` at v1.7.0 and publish again
+
+Caveat for step 2: the 14 combo classes get *higher* specificity in Webflow
+(`.nv-btn.nv-btn--ghost`, 0-2-0) than `nav.css`'s single-class versions
+(0-1-0), so those switch over the moment you publish. The values are copied
+verbatim, so it renders the same — but they flip early.

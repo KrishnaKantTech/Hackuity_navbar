@@ -3,7 +3,8 @@
 Standalone navbar component for the Hackuity Webflow site. No dependencies, no build step.
 
 ```
-nav.css     ships to the CDN
+nav.css     ships to the CDN — the half Webflow's Style panel cannot express
+nav-panel.css  GENERATED mirror of the Webflow half; local previews only, never shipped
 nav.js      ships to the CDN
 nav.html    structure reference — the one-time conversion source for Webflow
 embed.html  demo host page (generated from nav.html)
@@ -22,13 +23,34 @@ NOTES.md    Figma measurements, decisions, verification log, porting map
 ## Testing the navbar locally
 Open `embed.html` in a browser to see it. Resize past 1440 / 1280 / 768 / 480 to cross the breakpoints.
 
-## The three-layer split
+## The four-layer split
+
+As of **v1.7.0** the CSS is split in two. The look is in Webflow; the machinery
+is still here.
 
 | Layer | Lives | Notes |
 |---|---|---|
 | **Structure** | Webflow | One-time conversion of `nav.html` into native elements |
-| **CSS + JS** | this repo → jsDelivr | Version-tagged, edited here, never in Webflow |
+| **Look** | Webflow Style panel | 93 rules — layout, spacing, radius, type, colour — bound to the `Nav` and `Color` variable collections. **Edit in the Designer.** |
+| **Machinery** | this repo → jsDelivr | `nav.css` + `nav.js`. Baseline, state, motion, transitions, `@font-face`. Version-tagged, never edited in Webflow. |
 | **Nav items** | static markup | CMS binding is **on hold** — seven hard-coded links |
+
+What could not move, and why: the component baseline has to load *after*
+Webflow's normalize to do its job; `[data-nav-swap]` / `[data-nav-state]` /
+descendant selectors have no Style-panel equivalent; transition durations and
+easings come from `--nv-*` tokens Webflow has no type for. Full list and
+reasons: `webflow/import-plan.json`, and NOTES.md § 21.
+
+**Eleven tokens are declared in both places** — `--nv-bar-h`, `--nv-blur`,
+`--nv-font`, `--nv-link-pad`, `--nv-panel-tuck`, `--nv-radius-6`, `--nv-rail-w`,
+`--nv-space-5/7/8/10` — because rules on both sides use them. Change one,
+change the other.
+
+### Testing standalone
+
+`embed.html` loads `nav-panel.css` before `nav.css`, in the same order Webflow
+serves them, so the local preview matches the site. `nav-panel.css` is a
+generated snapshot — after editing styles in the Designer, regenerate it.
 
 ## Install in Webflow
 
@@ -37,9 +59,9 @@ copy the **Hackuity Navbar** wrapper to a page and it works. Inside it, two HTML
 embeds bracket the markup:
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.6.0/nav.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.7.0/nav.css">
 …the navbar…
-<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.6.0/nav.js"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/KrishnaKantTech/Hackuity_navbar@v1.7.0/nav.js"></script>
 ```
 
 **Load these once per page.** Custom Code *and* the wrapper means two `nav.js`
@@ -63,10 +85,9 @@ left to lose the second class:
 <a class="nv-btn nv-btn--ghost nv-login">   →   .nv-btn.nv-btn--ghost.nv-login
 ```
 
-The MCP drops any class that is not already a Webflow style, so the styles are
-created **first** — all 58 of them, with empty properties. The Style panel gets
-the class; every declaration still comes from `nav.css` on the CDN. See
-NOTES.md § 12.
+The MCP drops any class that is not already a Webflow style, so the styles were
+created **first** — all 58 of them, originally with empty properties. As of
+v1.7.0 they carry the real declarations; see NOTES.md § 12 and § 21.
 
 Rename any `nv-` class you like — **`nav.js` never reads one.** It finds every element through
 data attributes, and those must survive the conversion:
@@ -164,10 +185,21 @@ Two more things Webflow must not undo:
 
 - **Load `nav.css` after Webflow's own CSS.** It contains no reset — Webflow's normalize is the
   reset, and every rule here is scoped to an `nv-` class so it cannot reach outside the component.
-- **Breakpoints match Webflow's own tiers** — the link row goes compact at `max-width:1439px`
-  (12px link padding), collapses to the hamburger at `1279`, the bottom bar takes over at `767`,
-  and `479` is the portrait tier. Webflow's `991` tier needs no rules; the 1279 block covers it.
-  See NOTES.md § 15.4 for why 1280 is the floor.
+- **Breakpoints map 1:1 onto Webflow's own tiers, and the file is written desktop-up.** The base
+  (no media query) is the *collapsed* layout — hamburger, one-column mega-menu, 193px rail — and
+  desktop is an override on top of it. Webflow has no max-width tier between 992 and 1279, so a
+  `max-width:1279px` block would have nowhere to land in the Designer:
+
+  | `nav.css` | Webflow | what it is |
+  |---|---|---|
+  | base | `main` | collapsed |
+  | `min-width:1280px` | `large` | horizontal row (§ 6) |
+  | `min-width:1440px` | `xl` | link padding back to 16 (§ 6b) |
+  | `max-width:767px` | `small` | bottom bar + drawer (§ 7) |
+  | `max-width:479px` | `tiny` | portrait (§ 8) |
+
+  Webflow's `991` tier needs no rules — 768–991 and 992–1279 are styled identically.
+  Read the desktop values in § 6, not at the top of a rule. See NOTES.md § 20.
 - **The bar is a `.container-1280`, not a full-bleed pill.** `.nv-wrap` carries the 32px gutter
   (16px at ≤767) and `.nv-shell` caps at 1280px, so the pill's edges land on the page's own content
   edges. Delete any `.container-*` wrapper Webflow has around `.nv-wrap` — it would double the
@@ -187,7 +219,7 @@ So is the container the bar sits in, and the link spacing that makes 7 links fit
 ```css
 --nv-container-max:1280px;   /* pill width — mirrors Webflow .container-1280 */
 --nv-container-pad:32px;     /* gutter outside it; 16px at <=767 */
---nv-link-pad:16px;          /* horizontal only; 12px at <=1439, 24px on the rail */
+--nv-link-pad:24px;          /* horizontal only; 12px at >=1280, 16px at >=1440 */
 --nv-menu-left:223.535px;    /* 24 bar padding + 175.535 logo + 24 gap */
 ```
 

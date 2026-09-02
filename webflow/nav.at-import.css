@@ -1,5 +1,21 @@
 /* ============================================================================
-   HACKUITY NAVBAR  ·  nav.css  ·  v1.7.0
+   nav.css AS IT STOOD AT THE v1.7.0 IMPORT  ·  provenance, not shipped
+   ----------------------------------------------------------------------------
+   The exact input tools/build_import.py, tools/strip_imported.py and
+   tools/emit_webflow_css.py were run against. Keep it so the split can be
+   regenerated or audited:
+
+     python3 tools/build_import.py                                  # the plan
+     python3 tools/emit_webflow_css.py webflow/nav.at-import.css \
+             > nav-panel.css                                        # the mirror
+     python3 tools/strip_imported.py                                # rewrites nav.css
+
+   build_import and strip_imported read ./nav.css, so restore this file over
+   it first. The v1.7.0 header and version strings are hand-applied after.
+   ========================================================================= */
+
+/* ============================================================================
+   HACKUITY NAVBAR  ·  nav.css  ·  v1.0.0
    ----------------------------------------------------------------------------
    Variant B — the bar pill NEVER changes height (74 desktop / 80 tablet+mobile).
    The mega-menu is a separate surface behind it, tucked up by the amount Figma
@@ -27,33 +43,6 @@
    32px gutter (16px at <=767) — so the pill's edges land on the page's own content
    edges instead of running full-bleed.
 
-   ── What is left in this file ─────────────────────────────────────────────
-   As of v1.7.0 the look of the navbar lives in the WEBFLOW STYLE PANEL — 93
-   rules covering layout, spacing, radius, type and colour, bound to the `Nav`
-   and `Color` variable collections. Edit those in the Designer, not here.
-
-   What stays here is everything the Style panel cannot express:
-     · the component baseline (section 2) — it must load AFTER Webflow's
-       normalize to do its job, which is the whole reason it cannot move
-     · the state and motion layer — `[data-nav-swap]`, `[data-nav-state]`,
-       `nv-is-*` combos, descendant selectors, the panel crossfade
-     · transitions (durations and easings come from --nv-* tokens)
-     · --nv-shadow, backdrop-filter, grid-template-areas, @font-face,
-       prefers-reduced-motion
-   `nav-panel.css` is a generated local mirror of the Webflow half, so
-   embed.html and preview.html still render standalone. It is NOT shipped.
-
-   ── Tokens duplicated with Webflow ────────────────────────────────────────
-   These eleven are declared BOTH here and in Webflow's `Nav` collection,
-   because rules on both sides use them. Change one, change the other:
-
-     --nv-bar-h  --nv-blur  --nv-font  --nv-link-pad  --nv-panel-tuck
-     --nv-radius-6  --nv-rail-w  --nv-space-5  --nv-space-7  --nv-space-8
-     --nv-space-10
-
-   The rest of the :root block is no longer read by anything in this file; it
-   is kept only so `nav-panel.css` resolves when previewing standalone.
-
    ── Webflow / CDN contract ────────────────────────────────────────────────
    1. Every class is namespaced `nv-`. Every custom property is namespaced
       `--nv-`. Nothing here selects a bare element (no `body`, `ul`, `a`, `*`),
@@ -66,7 +55,7 @@
    4. Load order: this file AFTER Webflow's own CSS.
 
    <link rel="stylesheet"
-         href="https://cdn.jsdelivr.net/gh/OWNER/REPO@v1.7.0/nav.css">
+         href="https://cdn.jsdelivr.net/gh/OWNER/REPO@v1.0.0/nav.css">
    ========================================================================= */
 
 
@@ -374,11 +363,44 @@
 
 
 /* ============================================================================
-   3. LOGO — now entirely in the Webflow Style panel.
-   The box is 175.535 x 34 (Figma I153:845;5531:23300) and the children are
-   percentages of it, so the mobile 222 x 43 lockup is the same asset at a
-   bigger font-size. Edit .nv-logo / .nv-logo-mark / .nv-logo-word in Webflow.
+   3. LOGO — box 175.535 x 34 (Figma I153:845;5531:23300). Children are % of the
+   box, so the mobile 222 x 43 lockup is the same asset at a bigger font-size.
    ========================================================================= */
+.nv-logo {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: 175.535px;
+  height: 34px;
+  font-size: 34px
+}
+
+.nv-logo-mark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 19.53%;
+  height: 100%
+}
+
+.nv-logo-word {
+  /* TODO swap for the exported wordmark SVG — the one approximated element */
+  position: absolute;
+  left: 26.51%;
+  top: 18.75%;
+  width: 62.37%;
+  height: 81.25%;
+  font-size: .8125em;
+  line-height: .8125em;
+  font-weight: 500;
+  letter-spacing: -.021em;
+  color: var(--nv-text-logo);
+  white-space: nowrap;
+}
+
+.nv-logo--standalone {
+  display: none
+}
 
 
 /* ============================================================================
@@ -386,11 +408,43 @@
    .nv-bar is its own pill and never resizes. .nv-shell is a stacking wrapper
    with no surface of its own.
    ========================================================================= */
+.nv-wrap {
+  position: fixed;
+  top: var(--nv-bar-top);
+  left: 0;
+  right: 0;
+  padding-left: var(--nv-container-pad);
+  padding-right: var(--nv-container-pad);
+  z-index: 100;
+}
+
+/* The shell IS the container. Keeping max-width here rather than on .nv-wrap
+   matters: .nv-body and .nv-menu position against the shell, so the drawer and
+   the mega-menu inherit the same 1280 box the pill sits in. */
+.nv-shell {
+  position: relative;
+  width: 100%;
+  max-width: var(--nv-container-max);
+  margin-left: auto;
+  margin-right: auto;
+}
 
 .nv-bar {
+  position: relative;
+  z-index: 2;
+  border-radius: var(--nv-radius-6-max);
+  background: var(--nv-white-alpha-9);
   -webkit-backdrop-filter: blur(var(--nv-blur));
   backdrop-filter: blur(var(--nv-blur));
   box-shadow: var(--nv-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  height: var(--nv-bar-h);
+  /* 80 = 16+48+16 */
+  padding: var(--nv-space-4) var(--nv-space-4) var(--nv-space-4) var(--nv-space-5);
+  /* 16 16 16 24 */
 }
 
 /* z-index:auto here on purpose — .nv-body must NOT create a stacking context,
@@ -400,9 +454,17 @@
    and hands the clipping to .nv-panels instead — see section 6.
    nav.js picks the right element per breakpoint. */
 .nv-body {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) var(--nv-rail-w);
+  align-items: stretch;
+  /* definite row height, so the left column can scroll in it */
+  position: relative;
   top: calc(-1 * var(--nv-panel-tuck));
+  height: 0;
+  overflow: hidden;
   transition: height var(--nv-dur) var(--nv-ease);
+  background: var(--nv-surface);
+  border-radius: 0 0 var(--nv-radius-6-max) var(--nv-radius-6-max);
   box-shadow: var(--nv-shadow);
 }
 
@@ -414,8 +476,17 @@
 }
 
 .nv-panels {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  grid-row: 1;
+  height: auto;
+  overflow: visible;
   transition: none;
+  min-height: 0;
   top: 0;
+  background: none;
+  border-radius: 0;
   box-shadow: none;
 }
 
@@ -430,12 +501,34 @@
      of the row, so it stays put while the left column scrolls. Desktop lifts
      this into the bar as a horizontal row; see section 6. ---------- */
 .nv-menu {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  left: auto;
   top: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   padding-top: var(--nv-space-5);
   /* 24 */
+  z-index: 1;
+}
+
+.nv-item {
+  display: flex;
+  width: 100%;
 }
 
 .nv-link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 74px;
+  /* 24 + 26 + 24 */
+  justify-content: flex-start;
+  gap: var(--nv-space-2);
   padding: var(--nv-space-5) var(--nv-link-pad);
   /* vertical 24 = the 74px row height and the active highlight.
      horizontal is --nv-link-pad, which IS the spacing between links. */
@@ -443,7 +536,9 @@
   line-height: 26px;
   /* line-height stays 26 on purpose: 24 + 26 + 24 is the 74px row. */
   font-weight: 700;
+  letter-spacing: -.04px;
   color: var(--nv-text-primary);
+  white-space: nowrap;
   transition: color var(--nv-dur) var(--nv-ease), background-color var(--nv-dur) var(--nv-ease);
 }
 
@@ -457,14 +552,92 @@
   color: var(--nv-accent-9);
 }
 
+.nv-link-chevron,
+.nv-link-caret {
+  display: none;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto
+}
+
+/* the rail's drill-in arrow. Desktop hides it again and shows the caret. */
+.nv-link-chevron {
+  display: block;
+  order: -1
+}
+
+
+/* ---------- actions ---------- */
+.nv-actions {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--nv-space-2)
+}
+
 .nv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nv-space-3);
+  height: var(--nv-button-h);
+  padding: 0 var(--nv-space-5);
+  border-radius: var(--nv-radius-6);
+  font-size: 18px;
+  line-height: 26px;
+  white-space: nowrap;
   transition: background-color var(--nv-dur) var(--nv-ease);
 }
 
+.nv-btn--ghost {
+  font-weight: 400;
+  color: var(--nv-accent-alpha-11)
+}
+
+.nv-btn--ghost:hover {
+  background: var(--nv-neutral-alpha-3)
+}
+
+.nv-btn--primary {
+  font-weight: 500;
+  color: var(--nv-accent-contrast);
+  background: var(--nv-accent-9)
+}
+
+.nv-btn--primary:hover {
+  background: var(--nv-accent-9-hover)
+}
+
+/* the hamburger owns the menu below 1280, so Login has nowhere to sit.
+   Desktop brings it back — see section 6. */
+.nv-login {
+  display: none
+}
+
 .nv-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nv-space-3);
+  height: var(--nv-button-h);
   padding: 0 var(--nv-space-5);
+  border-radius: var(--nv-radius-6);
   color: var(--nv-accent-alpha-11);
   transition: background-color var(--nv-dur) var(--nv-ease);
+}
+
+.nv-menu-btn:hover {
+  background: var(--nv-neutral-alpha-3)
+}
+
+/* icon swap is driven by the attribute, never by a class — see nav.js */
+.nv-ico {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  display: none
 }
 
 .nv-menu-btn[data-nav-state="menu"] .nv-ico--menu {
@@ -479,11 +652,31 @@
   display: block
 }
 
+.nv-menu-btn-label {
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 400
+}
+
 
 /* ============================================================================
    5. PANELS
    ========================================================================= */
+/* mega-menu on the left. Desktop turns this back into a row — see section 6. */
+.nv-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0
+}
 
+.nv-panel-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nv-space-6)
+}
+
+/* 32 */
 .nv-panel[hidden] {
   display: none
 }
@@ -513,6 +706,11 @@
    Nothing here reaches inside that slot — the whole effect is applied to
    .nv-panel, the wrapper this file owns. */
 .nv-panel {
+  opacity: 1;
+  transform: none;
+  /* the swap does not run below 1280 — the rail and the drilldown own the
+     switch there. Resetting rather than trusting nav.js keeps a panel from
+     being stranded mid-fade when the viewport crosses 1280 during one. */
   transition: none;
 }
 
@@ -571,17 +769,161 @@
   transform: none
 }
 
+
+/* ---------- Webflow component slot ----------
+   `.nv-panel-inner` is the one place Webflow owns. A component dropped in here
+   keeps the mega-menu content editable in the Editor, on a protected page,
+   and the navbar picks the change up everywhere.
+
+   Deliberately styleless: no padding, no background, no layout of its own.
+   The components on /in-draft/navbar are already full-width blocks carrying
+   their own 48px 40px 40px, so anything added here would double up.
+
+   `:empty` keeps the slot out of .nv-panel's 32px gap until something is in
+   it — that is what lets the hand-built panels keep rendering unchanged while
+   the port is half-done. It is whitespace-sensitive, so `.nv-panel-inner` must
+   stay written with no space between its tags.
+
+   Width, not flex-basis: .nv-panel is a row on desktop and a column at <=1279,
+   and `width:100%` + `align-self:stretch` fills correctly in both. */
+.nv-panel-inner {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.nv-panel-inner:empty {
+  display: none
+}
+
 /* promo column — media beside the copy below 1280. Desktop turns it into the
    424-wide stacked column from Figma 87:298; see section 6. */
 .nv-promo {
+  flex: 0 0 auto;
+  width: 100%;
+  align-self: stretch;
+  display: grid;
   grid-template-areas: "media head" "media cta";
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: start;
+  gap: var(--nv-space-4);
+  /* 16 */
+  padding: var(--nv-space-7);
+  /* 40 */
+  background: var(--nv-gray-alpha-2);
+}
+
+.nv-promo-head {
+  grid-area: head;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nv-space-1)
+}
+
+.nv-promo-title {
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  letter-spacing: -.1px;
+  color: var(--nv-text-primary)
+}
+
+.nv-promo-sub {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--nv-text-primary)
+}
+
+.nv-promo-media {
+  grid-area: media;
+  min-height: 180px;
+  height: 100%;
+  background: var(--nv-surface);
+  border-radius: var(--nv-radius-5)
 }
 
 .nv-promo-cta {
+  grid-area: cta;
+  align-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nv-space-3);
+  height: 40px;
+  padding: 0 var(--nv-space-4);
+  border-radius: var(--nv-radius-5);
+  background: var(--nv-accent-9);
   color: var(--nv-accent-contrast);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+.nv-promo-cta:hover {
+  background: var(--nv-accent-9-hover)
+}
+
+/* groups area — Figma 87:290. One column below 1280; desktop lays the groups
+   out in a row and drops the left gutter next to the promo — see section 6. */
+.nv-groups {
+  flex: 1 0 0;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: var(--nv-space-7);
+  /* 40 */
+  padding: var(--nv-space-8) var(--nv-space-7) var(--nv-space-7);
+  /* 48 40 40 */
+}
+
+.nv-group {
+  flex: 1 0 0;
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nv-space-1)
+}
+
+.nv-group-label {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--nv-text-disabled);
+}
+
+.nv-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nv-space-2)
+}
+
+/* 8 */
+.nv-cards--loose {
+  gap: var(--nv-space-2)
+}
+
+.nv-cards--tight {
+  gap: 0
 }
 
 .nv-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nv-space-4);
+  /* 16 */
+  padding: var(--nv-space-4) 0;
+  /* 16 0 */
+  border-radius: var(--nv-radius-6);
   transition: background-color var(--nv-dur) var(--nv-ease);
 }
 
@@ -592,6 +934,84 @@ a.nv-card:hover {
 .nv-card.nv-is-disabled .nv-card-title,
 .nv-card.nv-is-disabled .nv-card-desc {
   color: var(--nv-text-disabled)
+}
+
+.nv-card-icon {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--nv-radius-5);
+  background: var(--nv-icon-tile-bg)
+}
+
+.nv-card-icon--muted {
+  background: var(--nv-neutral-alpha-3)
+}
+
+.nv-card-body {
+  flex: 1 0 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--nv-space-1)
+}
+
+.nv-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nv-space-2) var(--nv-space-4)
+}
+
+.nv-card-title {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -.08px;
+  color: var(--nv-text-heading)
+}
+
+.nv-card-desc {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--nv-text-secondary)
+}
+
+.nv-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nv-space-1);
+  min-width: 72px;
+  padding: var(--nv-space-1) var(--nv-space-2);
+  border-radius: var(--nv-radius-full);
+  background: var(--nv-info-9);
+  color: var(--nv-accent-contrast);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+/* placeholder hook: Figma has not been read for the neutral tag yet, so this
+   currently matches .nv-tag exactly. Keep it — the markup carries the class. */
+.nv-tag--plain {
+  padding: var(--nv-space-1) var(--nv-space-2)
+}
+
+.nv-tag-ico {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto
+}
+
+/* the vertical divider only exists in the desktop row layout — see section 6 */
+.nv-split {
+  display: none;
+  width: 1px;
+  align-self: stretch;
+  background: var(--nv-gray-4)
 }
 
 /* Partners — Figma 212:7450 is a 3 x 1fr grid, so its column is 517.33 wide
@@ -615,6 +1035,17 @@ a.nv-card:hover {
 .nv-panel[data-nav-panel="platform"] .nv-split {
   align-self: flex-start;
   height: 404px
+}
+
+.nv-group--empty {
+  display: none;
+  min-height: 1px
+}
+
+.nv-todo {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--nv-text-disabled)
 }
 
 .nv-scrim {
@@ -663,13 +1094,39 @@ a.nv-card:hover {
        At 16px it would be 31.5px over. Section 6b restores 16 at 1440. */
   }
 
+  .nv-bar {
+    justify-content: normal;
+    gap: var(--nv-space-5);
+    /* 24 — was 40; the 1280 box cannot spare it. Mirrored in --nv-menu-left. */
+    padding: 0 var(--nv-space-4) 0 var(--nv-space-5);
+    /* 0 16 0 24 */
+  }
+
+  .nv-actions {
+    flex: 1 0 0
+  }
+
+  .nv-login {
+    display: inline-flex
+  }
+
+  .nv-menu-btn {
+    display: none
+  }
+
   /* the link row is lifted up into the bar, so .nv-body must NOT clip — the
      height animation moves onto .nv-panels instead, and the surface with it.
      nav.js picks the right element per breakpoint. */
   .nv-body {
+    display: block;
     grid-template-columns: none;
+    align-items: normal;
     top: auto;
+    height: auto;
+    overflow: visible;
     transition: none;
+    background: none;
+    border-radius: 0;
     box-shadow: none;
   }
 
@@ -678,20 +1135,55 @@ a.nv-card:hover {
   }
 
   .nv-panels {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: auto;
     top: calc(-1 * var(--nv-panel-tuck));
     /* tuck behind the pill */
+    height: 0;
+    overflow: hidden;
     transition: height var(--nv-dur) var(--nv-ease);
+    background: var(--nv-surface);
+    border-radius: 0 0 var(--nv-radius-6-max) var(--nv-radius-6-max);
     box-shadow: var(--nv-shadow);
   }
 
   /* ---------- link list: desktop row, lifted into the bar ---------- */
   .nv-menu {
+    position: absolute;
+    grid-column: auto;
+    grid-row: auto;
+    align-self: auto;
+    left: var(--nv-menu-left);
     top: calc(-1 * var(--nv-bar-h));
+    height: var(--nv-bar-h);
+    flex-direction: row;
+    align-items: center;
     padding-top: 0;
+    z-index: 3;
+  }
+
+  .nv-item {
+    width: auto
+  }
+
+  .nv-link {
+    width: auto;
+    height: auto;
+    /* 24 + 26 + 24 = the same 74px row, from the padding rather than a height */
+    justify-content: normal;
+  }
+
+  .nv-link-chevron {
+    display: none;
+    order: 0
   }
 
   /* ---------- panel swap — desktop only. See the note in section 5. ------- */
   .nv-panel {
+    flex-direction: row;
+    gap: var(--nv-space-6);
+    /* 32 */
     transition:
       opacity var(--nv-swap-in-dur) var(--nv-swap-in-ease) var(--nv-swap-in-delay),
       transform var(--nv-swap-in-dur) var(--nv-swap-in-ease) var(--nv-swap-in-delay);
@@ -706,11 +1198,51 @@ a.nv-card:hover {
 
   /* promo column — Figma 87:298, 424 wide, self-stretch */
   .nv-promo {
+    flex: 0 0 424px;
+    width: auto;
     grid-template-areas: "head" "media" "cta";
+    grid-template-columns: none;
+    grid-template-rows: auto 1fr auto;
+    align-items: normal;
+  }
+
+  .nv-promo-media {
+    min-height: 208px;
+    height: auto
+  }
+
+  .nv-promo-cta {
+    align-self: auto
+  }
+
+  /* groups lay out as a row again, and lose the left gutter beside the promo */
+  .nv-groups {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--nv-space-10);
+    /* 80 */
   }
 
   .nv-promo+.nv-groups {
     padding-left: 0
+  }
+
+  .nv-group {
+    max-width: 464px;
+    width: auto
+  }
+
+  .nv-cards--loose {
+    gap: var(--nv-space-10)
+  }
+
+  .nv-split {
+    display: block
+  }
+
+  .nv-group--empty {
+    display: flex
   }
 }
 
@@ -742,8 +1274,55 @@ a.nv-card:hover {
     /* Webflow drops .container-1280 to padding-inline:1rem here */
   }
 
+  .nv-wrap {
+    top: auto;
+    bottom: var(--nv-space-5)
+  }
+
+  .nv-bar {
+    gap: var(--nv-space-4);
+    padding: var(--nv-space-4);
+    z-index: 2
+  }
+
+  .nv-logo--inbar {
+    display: none
+  }
+
+  .nv-logo--standalone {
+    display: block;
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    margin-left: -111px;
+    width: 222px;
+    height: 43px;
+    font-size: 43px;
+    z-index: 98;
+  }
+
+  .nv-actions {
+    flex: 1 0 0;
+    gap: var(--nv-space-4)
+  }
+
+  .nv-demo-wrap {
+    flex: 1 0 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--nv-space-2)
+  }
+
   .nv-menu-btn {
+    flex: 0 0 auto;
+    width: var(--nv-button-h);
+    height: var(--nv-button-h);
     padding: 0
+  }
+
+  .nv-menu-btn-label {
+    display: none
   }
 
   .nv-menu-btn[data-nav-state="back"] {
@@ -752,12 +1331,21 @@ a.nv-card:hover {
 
   /* drawer: own surface, above the bar, tucked 24 behind it */
   .nv-body {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
     top: auto;
     bottom: calc(var(--nv-bar-h) - var(--nv-panel-tuck));
     /* 80 - 24 = 56 */
+    display: block;
+    background: var(--nv-surface);
     -webkit-backdrop-filter: blur(var(--nv-blur));
     backdrop-filter: blur(var(--nv-blur));
+    border-radius: var(--nv-radius-6-max) var(--nv-radius-6-max) 0 0;
     box-shadow: var(--nv-shadow);
+    height: 0;
+    overflow: hidden;
     transition: height var(--nv-dur) var(--nv-ease);
   }
 
@@ -793,8 +1381,19 @@ a.nv-card:hover {
   }
 
   .nv-link {
+    height: 76px;
+    /* 24 + 28 + 24 */
     font-size: 20px;
     line-height: 28px;
+    letter-spacing: -.08px;
+  }
+
+  .nv-link-chevron {
+    display: none
+  }
+
+  .nv-link-caret {
+    display: block
   }
 
   .nv-item.nv-is-active .nv-link {
@@ -802,8 +1401,25 @@ a.nv-card:hover {
     color: var(--nv-text-primary)
   }
 
+  .nv-panel {
+    flex-direction: column;
+    gap: 0
+  }
+
   .nv-promo {
     grid-template-areas: "head" "media" "cta";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    padding: var(--nv-space-5);
+  }
+
+  .nv-promo-media {
+    min-height: 160px
+  }
+
+  .nv-groups {
+    padding: var(--nv-space-5);
+    gap: var(--nv-space-5)
   }
 
   /* Carried over from before the desktop-up flip, deliberately. The old tablet
@@ -817,6 +1433,15 @@ a.nv-card:hover {
   .nv-promo+.nv-groups {
     padding: var(--nv-space-8) var(--nv-space-7) var(--nv-space-7);
     gap: var(--nv-space-7);
+  }
+
+  .nv-card {
+    padding: var(--nv-space-4) 0
+  }
+
+  .nv-card-title {
+    font-size: 18px;
+    line-height: 26px
   }
 }
 
